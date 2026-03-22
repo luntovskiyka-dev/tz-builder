@@ -1,5 +1,6 @@
 "use server";
 
+import { mapLoginErrorMessage, mapSignupErrorMessage } from "@/lib/auth-messages";
 import { createServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -16,7 +17,7 @@ export async function signupAction(prevState: AuthFormState, formData: FormData)
   }
 
   if (password.length < 6) {
-    return { error: "Пароль должен быть минимум 6 символов" };
+    return { error: "Пароль должен быть не менее 6 символов" };
   }
 
   if (password !== confirmPassword) {
@@ -31,8 +32,8 @@ export async function signupAction(prevState: AuthFormState, formData: FormData)
     },
   });
 
-  if (error) return { error: error.message };
-  return { success: "Проверьте почту для подтверждения" };
+  if (error) return { error: mapSignupErrorMessage(error.message) };
+  return { success: "Регистрация успешно завершена" };
 }
 
 export async function loginAction(prevState: AuthFormState, formData: FormData) {
@@ -49,7 +50,7 @@ export async function loginAction(prevState: AuthFormState, formData: FormData) 
     password,
   });
 
-  if (error) return { error: error.message };
+  if (error) return { error: mapLoginErrorMessage(error.message) };
   redirect("/dashboard");
 }
 

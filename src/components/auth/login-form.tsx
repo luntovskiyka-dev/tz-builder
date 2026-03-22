@@ -1,4 +1,4 @@
- "use client";
+"use client";
 
 import Link from "next/link";
 import { useActionState } from "react";
@@ -6,8 +6,8 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { cn } from "@/lib/utils";
+import { AuthAlert } from "@/components/auth/AuthAlert";
+import { authFormCardClass } from "@/components/auth/auth-form-styles";
 import { loginAction } from "@/lib/actions/auth";
 
 type LoginFormProps = {
@@ -18,32 +18,23 @@ export function LoginForm({ className }: LoginFormProps) {
   const [state, formAction, isPending] = useActionState(loginAction, null);
 
   return (
-    <Card
-      className={cn(
-        "w-full max-w-sm border-border/70 bg-card/75 shadow-sm backdrop-blur-sm rounded-2xl",
-        className,
-      )}
-    >
+    <Card className={authFormCardClass(className)}>
       <div className="mb-8 text-center">
         <span className="text-xl font-semibold tracking-tight text-foreground">
           ProtoSpec<span className="opacity-40">.</span>
         </span>
       </div>
-      <CardHeader className="space-y-1 pt-0">
+      <CardHeader className="space-y-1 pt-0 text-center">
         <CardTitle className="text-xl font-semibold tracking-tight text-foreground">
-          Вход в ProtoSpec
+          Вход
         </CardTitle>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="mt-1 text-sm text-muted-foreground">
           Продолжите работу над вашими техническими заданиями.
         </p>
       </CardHeader>
       <form action={formAction}>
         <CardContent className="space-y-4">
-          {state?.error && (
-            <Alert variant="destructive" className="text-sm">
-              <AlertDescription>{state.error}</AlertDescription>
-            </Alert>
-          )}
+          <AuthAlert type="error" message={state?.error ?? ""} />
 
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -74,19 +65,12 @@ export function LoginForm({ className }: LoginFormProps) {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-3 pt-6">
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isPending}
-          >
+          <Button type="submit" className="w-full" disabled={isPending}>
             {isPending ? "Входим..." : "Войти"}
           </Button>
           <p className="w-full text-center text-sm text-muted-foreground">
             Нет аккаунта?{" "}
-            <Link
-              href="/signup"
-              className="font-medium text-primary underline-offset-4 hover:underline"
-            >
+            <Link href="/signup" className="font-medium text-primary underline-offset-4 hover:underline">
               Зарегистрироваться
             </Link>
           </p>
@@ -95,4 +79,3 @@ export function LoginForm({ className }: LoginFormProps) {
     </Card>
   );
 }
-
