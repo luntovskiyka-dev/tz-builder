@@ -56,6 +56,41 @@ export function ExportModal({
   const startTimeRef = useRef<number>(0);
   const charsReceivedRef = useRef(0);
 
+  const [quota, setQuota] = useState<{
+    authenticated: boolean;
+    remaining: number;
+    limit: number;
+  } | null>(null);
+
+  const fetchQuota = useCallback(async () => {
+    try {
+      const r = await fetch("/api/generate-spec/quota");
+      if (!r.ok) return;
+      const d = (await r.json()) as {
+        authenticated?: boolean;
+        remaining?: number;
+        limit?: number;
+      };
+      setQuota({
+        authenticated: d.authenticated ?? false,
+        remaining: d.remaining ?? 0,
+        limit: d.limit ?? 2,
+      });
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) void fetchQuota();
+  }, [isOpen, fetchQuota]);
+
+  const generateDisabled =
+    isGenerating ||
+    (quota !== null &&
+      quota.authenticated &&
+      quota.remaining <= 0);
+
   const handleGenerateAI = async () => {
     // Lock projectId at the moment user starts generation, so it can't change
     // due to async project switching while the stream is running.
@@ -84,8 +119,15 @@ export function ExportModal({
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        setAiError(data.error || "Ошибка генерации");
+        let message = "Ошибка генерации";
+        try {
+          const data = (await response.json()) as { error?: string };
+          message = data.error || message;
+        } catch {
+          // non-JSON body
+        }
+        setAiError(message);
+        void fetchQuota();
         return;
       }
 
@@ -194,6 +236,7 @@ export function ExportModal({
     } catch {
       setAiError("Не удалось подключиться к серверу");
     } finally {
+      void fetchQuota();
       setIsGenerating(false);
       setStage("idle");
     }
@@ -282,7 +325,7 @@ export function ExportModal({
           <button
             type="button"
             onClick={handleGenerateAI}
-            disabled={isGenerating}
+            disabled={generateDisabled}
             className="w-full bg-[#0A0A0A] text-white rounded-lg py-2.5 px-4 text-sm font-medium hover:bg-[#0A0A0A]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isGenerating ? (
@@ -297,6 +340,14 @@ export function ExportModal({
               </>
             )}
           </button>
+
+          {quota && quota.authenticated && (
+            <p className="text-[11px] text-center text-gray-500">
+              {quota.remaining > 0
+                ? `Осталось ${quota.remaining} из ${quota.limit} генераций сегодня (UTC)`
+                : `Лимит исчерпан: ${quota.limit} генерации в сутки (UTC). Попробуйте завтра.`}
+            </p>
+          )}
 
           {isGenerating && (
             <div className="space-y-2">

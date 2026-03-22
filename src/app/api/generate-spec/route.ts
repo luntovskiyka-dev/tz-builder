@@ -1,5 +1,8 @@
 import OpenAI from "openai";
 import { NextRequest, NextResponse } from "next/server";
+import { createServerClient } from "@/lib/supabase/server";
+
+const SPEC_GEN_PER_DAY = 2;
 
 const client = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY,
@@ -36,6 +39,50 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Нет блоков для генерации ТЗ" },
         { status: 400 }
+      );
+    }
+
+    const supabase = await createServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Войдите в аккаунт, чтобы генерировать ТЗ" },
+        { status: 401 }
+      );
+    }
+
+    const { data: quotaData, error: quotaError } = await supabase.rpc(
+      "try_consume_spec_generation",
+      { max_per_day: SPEC_GEN_PER_DAY }
+    );
+
+    if (quotaError) {
+      console.error("try_consume_spec_generation error:", quotaError);
+      return NextResponse.json(
+        { error: "Не удалось проверить лимит генераций" },
+        { status: 500 }
+      );
+    }
+
+    const quota = quotaData as {
+      allowed?: boolean;
+      used?: number;
+      limit?: number;
+      reason?: string;
+    };
+
+    if (!quota?.allowed) {
+      return NextResponse.json(
+        {
+          error:
+            "Достигнут лимит: 2 генерации ТЗ в сутки (UTC). Попробуйте завтра.",
+          used: quota?.used,
+          limit: quota?.limit ?? SPEC_GEN_PER_DAY,
+        },
+        { status: 429 }
       );
     }
 
@@ -109,7 +156,7 @@ ${JSON.stringify(simplifiedBlocks, null, 2)}
     if (err?.status === 401) {
       return NextResponse.json(
         { error: "Неверный API ключ DeepSeek" },
-        { status: 401 }
+        { status: 502 }
       );
     }
 
