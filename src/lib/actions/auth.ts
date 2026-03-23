@@ -33,7 +33,7 @@ export async function signupAction(prevState: AuthFormState, formData: FormData)
   });
 
   if (error) return { error: mapSignupErrorMessage(error.message) };
-  return { success: "Регистрация успешно завершена" };
+  return { success: "Письмо отправлено — проверьте почту" };
 }
 
 export async function loginAction(prevState: AuthFormState, formData: FormData) {
