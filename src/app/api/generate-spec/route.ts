@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { buildStructuredSpecPayload } from "@/lib/export/specPayload";
 
 const SPEC_GEN_PER_DAY = 2;
 
@@ -86,17 +87,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Упрощаем блоки — убираем лишние данные, оставляем только нужное
-    const simplifiedBlocks = blocks.map((block: { type: string; props?: unknown }, index: number) => ({
-      номер: index + 1,
-      тип: block.type,
-      параметры: block.props,
-    }));
+    // Build schema-aware normalized payload for the model.
+    const structuredBlocks = buildStructuredSpecPayload(blocks);
 
     const userMessage = `Создай техническое задание для страницы сайта.
     
 Структура страницы (${blocks.length} блоков):
-${JSON.stringify(simplifiedBlocks, null, 2)}
+${JSON.stringify(structuredBlocks, null, 2)}
 
 Название проекта: веб-страница`;
 

@@ -29,12 +29,31 @@ export async function submitFeedbackAction(
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (!user) {
+    return { error: "Нужно войти в аккаунт, чтобы отправить обратную связь." };
+  }
+
   const { error } = await supabase.from("feedback").insert({
     message: message.trim(),
-    user_id: user?.id ?? null,
+    user_id: user.id,
   });
 
   if (error) {
+    console.error("submitFeedbackAction error:", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
+
+    // Relation does not exist
+    if (error.code === "42P01") {
+      return { error: "Таблица feedback не создана в базе данных." };
+    }
+    // RLS / permission denied
+    if (error.code === "42501") {
+      return { error: "Нет прав на запись feedback (проверьте RLS policy)." };
+    }
     return { error: "Не удалось отправить. Попробуйте позже." };
   }
 

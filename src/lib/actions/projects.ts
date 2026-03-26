@@ -28,6 +28,7 @@ export type SaveProjectResult = {
 export type LoadProjectResult = {
   blocks?: unknown;
   spec?: string | null;
+  schemaVersion?: number;
   error?: string;
 };
 
@@ -65,7 +66,8 @@ export async function saveProjectAction(
     let blocks: unknown[] = [];
     if (blocksRaw) {
       try {
-        blocks = JSON.parse(blocksRaw) as unknown[];
+        const parsed = JSON.parse(blocksRaw) as unknown;
+        blocks = Array.isArray(parsed) ? parsed : [];
       } catch {
         return { error: "Неверный формат данных блоков" };
       }
@@ -200,8 +202,9 @@ export async function loadProjectAction(
       }
 
       return {
-        blocks: blocksData?.blocks ?? [],
+        blocks: Array.isArray(blocksData?.blocks) ? blocksData.blocks : [],
         spec: null,
+        schemaVersion: 0,
       };
     }
 
@@ -209,8 +212,9 @@ export async function loadProjectAction(
       return { error: "Проект не найден" };
     }
     return {
-      blocks: data.blocks ?? [],
+      blocks: Array.isArray(data.blocks) ? data.blocks : [],
       spec: (data.spec as string | null) ?? null,
+      schemaVersion: 0,
     };
   } catch (err) {
     console.error("loadProjectAction:", err);
