@@ -45,6 +45,7 @@ import {
   ChevronDown,
   ChevronRight,
   Layout,
+  Menu,
   Image as ImageIcon,
   Type,
   LayoutGrid,
@@ -70,6 +71,12 @@ import { ExportModal } from "@/components/export/ExportModal";
 import { FeedbackModal } from "@/components/FeedbackModal";
 
 type SavedStatus = "saved" | "saving" | "error";
+type DashboardLayoutUser = {
+  name?: string | null;
+  email?: string | null;
+  avatarUrl?: string | null;
+  plan?: string | null;
+};
 
 type DragData =
   | { type: "palette"; blockType: string }
@@ -143,6 +150,8 @@ const INSPECTOR_LABEL_CLASS =
   "text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1";
 const INSPECTOR_SECTION_TITLE_CLASS = "text-sm font-semibold text-foreground";
 const INSPECTOR_SUBTLE_TEXT_CLASS = "text-xs text-muted-foreground leading-relaxed";
+const INSPECTOR_PANEL_CLASS =
+  "rounded-xl border border-border/70 bg-background/95 p-4 shadow-sm supports-[backdrop-filter]:bg-background/90";
 
 const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   header: Layout,
@@ -186,7 +195,7 @@ function PaletteItem({
       style={style}
       {...attributes}
       {...listeners}
-      className="flex cursor-grab items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-foreground active:cursor-grabbing w-full text-left"
+      className="flex h-full w-full cursor-grab items-center gap-1.5 rounded-lg px-3 py-0 text-sm text-foreground text-left active:cursor-grabbing"
     >
       {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
       {label}
@@ -449,8 +458,8 @@ function PropertiesInspector({
 }) {
   if (!block) {
     return (
-      <div className="flex h-full flex-col items-center justify-center text-center gap-3 px-4">
-        <div className="w-10 h-10 rounded-xl border border-border flex items-center justify-center bg-muted/20">
+      <div className={`${INSPECTOR_PANEL_CLASS} flex h-full flex-col items-center justify-center gap-3 px-4 text-center`}>
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-muted/20">
           <svg
             width="18"
             height="18"
@@ -2638,8 +2647,8 @@ function PropertiesInspector({
   })();
 
   return (
-    <>
-      <div className="mb-4 pb-3 border-b border-border/70">
+    <div className={INSPECTOR_PANEL_CLASS}>
+      <div className="mb-4 border-b border-border/70 pb-3">
         <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
           Настройки блока
         </p>
@@ -2648,7 +2657,7 @@ function PropertiesInspector({
         </p>
       </div>
       {blockSpecificContent}
-    </>
+    </div>
   );
 }
 
@@ -2804,7 +2813,11 @@ function GenericBlockFields({
   );
 }
 
-export function DashboardLayout() {
+export function DashboardLayout({
+  user,
+}: {
+  user?: DashboardLayoutUser;
+}) {
   const [canvasBlocks, setCanvasBlocks] = useState<CanvasBlock[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
@@ -2827,6 +2840,16 @@ export function DashboardLayout() {
   );
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const userName = user?.name?.trim() || "Пользователь";
+  const userEmail = user?.email?.trim() || "no-email@example.com";
+  const currentProjectName =
+    projectsList.find((project) => project.id === currentProjectId)?.name ?? "Не выбран";
+  const avatarUrl =
+    user?.avatarUrl?.trim() ||
+    "/images/avatar-placeholder.svg";
   const toggleBlockCategory = useCallback((catId: string) => {
     setBlockCategoriesOpen((prev) => {
       const next = new Set(prev);
@@ -2873,6 +2896,16 @@ export function DashboardLayout() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
   // When opening ExportModal, refresh currently selected project's saved spec.
@@ -3126,6 +3159,101 @@ export function DashboardLayout() {
     setSelectedId((id) => (id === blockId ? null : id));
   }, []);
 
+  const ProfileMenuContent = () => (
+    <div className="absolute left-2 right-2 top-12 z-50 rounded-lg border border-border bg-background p-2 shadow-md">
+      <div className="space-y-3">
+        <section className="space-y-1 border-b border-border/70 pb-2">
+          <p className="truncate px-2 text-xs text-muted-foreground">{userEmail}</p>
+        </section>
+
+        <section className="space-y-2 border-b border-border/70 pb-2">
+          <button
+            type="button"
+            onClick={() => setProjectsMenuOpen((open) => !open)}
+            className="flex w-full items-center justify-between rounded-md p-2 text-left text-sm text-foreground transition-colors hover:bg-muted"
+            aria-expanded={projectsMenuOpen}
+          >
+            <span>Проекты</span>
+            {projectsMenuOpen ? (
+              <ChevronDown className="h-4 w-4 shrink-0" />
+            ) : (
+              <ChevronRight className="h-4 w-4 shrink-0" />
+            )}
+          </button>
+          {projectsMenuOpen && (
+            <div className="space-y-2 px-1">
+              {projectsLoading ? (
+                <p className="px-1 text-[11px] text-muted-foreground">Загрузка...</p>
+              ) : projectsList.length === 0 ? (
+                <p className="px-1 text-[11px] text-muted-foreground">Нет проектов</p>
+              ) : (
+                <ul className="max-h-28 space-y-1 overflow-y-auto">
+                  {projectsList.map((proj) => (
+                    <li key={proj.id}>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectProject(proj.id)}
+                        className={`w-full truncate rounded-md px-2 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted ${
+                          currentProjectId === proj.id ? "bg-muted font-medium" : ""
+                        }`}
+                      >
+                        {proj.name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  onClick={openNewProjectDialog}
+                  className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/50"
+                >
+                  Новый проект
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveClick}
+                  className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/50"
+                >
+                  Сохранить
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteProject}
+                  disabled={!currentProjectId}
+                  className="w-full rounded-md border border-destructive/40 bg-background px-3 py-1.5 text-xs text-destructive transition-colors hover:border-destructive hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-destructive/40 disabled:hover:text-destructive"
+                >
+                  Удалить проект
+                </button>
+              </div>
+              {deleteError && <p className="px-1 text-[11px] text-red-600">{deleteError}</p>}
+            </div>
+          )}
+        </section>
+
+        <section className="space-y-1">
+          <button
+            type="button"
+            onClick={() => setFeedbackModalOpen(true)}
+            className="w-full rounded-md p-2 text-left text-sm text-foreground transition-colors hover:bg-muted"
+          >
+            Обратная связь
+          </button>
+          <form ref={logoutFormRef} action={logoutAction}>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full rounded-md p-2 text-left text-sm text-foreground transition-colors hover:bg-muted"
+            >
+              Выход
+            </button>
+          </form>
+        </section>
+      </div>
+    </div>
+  );
+
   return (
     <DndContext sensors={dndSensors} onDragEnd={handleDragEnd}>
       <Dialog
@@ -3213,112 +3341,94 @@ export function DashboardLayout() {
         onClose={() => setFeedbackModalOpen(false)}
       />
       <div className="flex min-h-screen bg-background">
+        <button
+          type="button"
+          onClick={() => setIsLeftSidebarOpen((v) => !v)}
+          className="fixed left-4 top-4 z-50 rounded-md border border-border bg-background p-2 text-foreground shadow-sm md:hidden"
+          aria-label="Toggle sidebar"
+          aria-expanded={isLeftSidebarOpen}
+        >
+          {isLeftSidebarOpen ? (
+            <X className="h-5 w-5" />
+          ) : (
+            <Menu className="h-5 w-5" />
+          )}
+        </button>
+
+        {isLeftSidebarOpen && (
+          <button
+            type="button"
+            className="fixed inset-0 z-30 bg-black/30 md:hidden"
+            onClick={() => setIsLeftSidebarOpen(false)}
+            aria-label="Close sidebar overlay"
+          />
+        )}
+
         {/* Left sidebar */}
-        <aside className="w-[260px] border-r border-border/70 bg-background/80 supports-[backdrop-filter]:bg-background/70 backdrop-blur p-4 flex flex-col sticky top-0 h-screen overflow-y-auto">
-          <div className="mb-5 pb-4 border-b border-border/70">
-            <span className="text-base font-semibold tracking-tight text-foreground">
-              ProtoSpec<span className="opacity-30">.</span>
-            </span>
+        <aside
+          className={`fixed left-0 top-0 z-40 flex h-screen w-[260px] transform flex-col overflow-y-auto border-r border-border/70 bg-background/80 p-4 backdrop-blur supports-[backdrop-filter]:bg-background/70 transition-transform duration-200 md:sticky md:translate-x-0 ${
+            isLeftSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          <div className="mb-3 border-b border-border/70 pb-3">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-base font-semibold tracking-tight text-foreground">
+                ProtoSpec<span className="opacity-30">.</span>
+              </span>
+            </div>
+            <div className="relative flex items-center gap-3" ref={profileMenuRef}>
+              <img src={avatarUrl} className="h-10 w-10 rounded-full object-cover" alt="User avatar" />
+              <div className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold text-foreground">{userName}</span>
+                <span className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
+                  <span
+                    className={`inline-block h-2 w-2 rounded-full ${
+                      cloudSaveStatus === "saved"
+                        ? "bg-emerald-500"
+                        : cloudSaveStatus === "saving"
+                        ? "bg-amber-500"
+                        : "bg-red-500"
+                    }`}
+                  />
+                  <span>
+                    {cloudSaveStatus === "saved" && "Сохранено"}
+                    {cloudSaveStatus === "saving" && "Автосохранение"}
+                    {cloudSaveStatus === "error" && "Ошибка облака"}
+                  </span>
+                </span>
+              </div>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsProfileMenuOpen((v) => !v)}
+                  className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  aria-haspopup="menu"
+                  aria-expanded={isProfileMenuOpen}
+                >
+                  <ChevronDown className={`h-4 w-4 transition-transform ${isProfileMenuOpen ? "rotate-180" : ""}`} />
+                </button>
+              </div>
+              {isProfileMenuOpen && <ProfileMenuContent />}
+            </div>
           </div>
-          {/* Projects collapsible menu */}
-          <div className="mb-3 border-b border-border/70 pb-2">
+          <div className="mb-3">
             <button
               type="button"
-              onClick={() => setProjectsMenuOpen((o) => !o)}
-              className="flex w-full items-center gap-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+              onClick={() => setExportModalOpen(true)}
+              disabled={projectsLoading}
+              className={`w-full bg-primary text-primary-foreground rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                projectsLoading ? "hover:bg-primary" : ""
+              }`}
             >
-              {projectsMenuOpen ? (
-                <ChevronDown className="h-4 w-4 shrink-0" />
-              ) : (
-                <ChevronRight className="h-4 w-4 shrink-0" />
-              )}
-              <span>Проекты</span>
+              Сгенерировать ТЗ с AI
             </button>
-            {projectsMenuOpen && (
-              <div className="mt-2 space-y-2 pl-5">
-                {projectsLoading ? (
-                  <p className="text-[11px] text-muted-foreground">Загрузка...</p>
-                ) : projectsList.length === 0 ? (
-                  <p className="text-[11px] text-muted-foreground">Нет проектов</p>
-                ) : (
-                  <ul className="max-h-24 space-y-0.5 overflow-y-auto text-[11px]">
-                    {projectsList.map((proj) => (
-                      <li key={proj.id}>
-                        <button
-                          type="button"
-                          onClick={() => handleSelectProject(proj.id)}
-                          className={`w-full truncate rounded-lg px-2 py-1.5 text-left text-sm text-foreground hover:bg-muted/50 transition-colors ${
-                            currentProjectId === proj.id ? "bg-muted/60 font-medium" : ""
-                          }`}
-                        >
-                          {proj.name}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <div className="flex flex-wrap gap-1">
-                  <button
-                    type="button"
-                    onClick={openNewProjectDialog}
-                    className="flex-1 min-w-0 border border-border bg-background text-foreground rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-muted/50 transition-colors w-full"
-                  >
-                    Новый проект
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSaveClick}
-                    className="border border-border bg-background text-foreground rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-muted/50 transition-colors w-full"
-                  >
-                    Сохранить
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDeleteProject}
-                    disabled={!currentProjectId}
-                    className="w-full border border-border bg-background text-muted-foreground rounded-lg px-3 py-1.5 text-xs hover:border-destructive/40 hover:text-destructive transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-border disabled:hover:text-muted-foreground"
-                  >
-                    Удалить проект
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setExportModalOpen(true)}
-                    disabled={projectsLoading}
-                    className={`w-full bg-primary text-primary-foreground rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                      projectsLoading ? "hover:bg-primary" : ""
-                    }`}
-                  >
-                    Сгенерировать ТЗ с AI
-                  </button>
-                </div>
-                {deleteError && (
-                  <p className="text-[11px] text-red-600">{deleteError}</p>
-                )}
-              </div>
-            )}
           </div>
           <div className="mb-3 space-y-2">
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
               Библиотека блоков
             </h2>
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-              <span
-                className={`inline-block h-2 w-2 rounded-full ${
-                  cloudSaveStatus === "saved"
-                    ? "bg-emerald-500"
-                    : cloudSaveStatus === "saving"
-                    ? "bg-amber-500"
-                    : "bg-red-500"
-                }`}
-              />
-              <span>
-                {cloudSaveStatus === "saved" && "Облако"}
-                {cloudSaveStatus === "saving" && "В облако..."}
-                {cloudSaveStatus === "error" && "Ошибка облака"}
-              </span>
-            </div>
           </div>
-          <div className="max-h-[50vh] space-y-1 overflow-y-auto text-sm">
+          <div className="flex-1 min-h-0 space-y-1 overflow-y-auto text-sm">
             {BLOCK_CATEGORIES.map((cat) => {
               const Icon = CATEGORY_ICONS[cat.id];
 
@@ -3328,7 +3438,7 @@ export function DashboardLayout() {
                 return (
                   <div
                     key={cat.id}
-                    className="bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground hover:border-ring/40 hover:bg-muted/40 transition-colors cursor-grab"
+                    className="h-10 bg-background border border-border rounded-lg px-3 py-0 text-sm text-foreground hover:border-ring/40 hover:bg-muted/40 transition-colors cursor-grab flex items-center"
                   >
                     <PaletteItem blockType={b.id} label={cat.label} icon={Icon} />
                   </div>
@@ -3356,7 +3466,7 @@ export function DashboardLayout() {
                       {cat.blocks.map((b) => (
                         <li
                           key={b.id}
-                          className="bg-background border border-border rounded-lg hover:border-ring/40 hover:bg-muted/40 transition-colors cursor-grab list-none"
+                          className="h-10 bg-background border border-border rounded-lg hover:border-ring/40 hover:bg-muted/40 transition-colors cursor-grab list-none flex items-center"
                         >
                           <PaletteItem
                             blockType={b.id}
@@ -3370,40 +3480,6 @@ export function DashboardLayout() {
               );
             })}
           </div>
-          <div className="mt-auto border-t border-border/70 pt-3 pb-2">
-            <button
-              type="button"
-              onClick={() => setFeedbackModalOpen(true)}
-              className="w-full rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors text-left flex items-center gap-1.5"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-3.5 w-3.5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
-              Обратная связь
-            </button>
-          </div>
-          <form
-            ref={logoutFormRef}
-            action={logoutAction}
-            className="border-t border-border/70 pt-3"
-          >
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="w-full rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors text-left"
-            >
-              Выход
-            </button>
-          </form>
         </aside>
 
         {/* Canvas */}
@@ -3425,7 +3501,7 @@ export function DashboardLayout() {
         </CanvasArea>
 
         {/* Right sidebar */}
-        <aside className="w-[280px] border-l border-border/70 bg-background/80 supports-[backdrop-filter]:bg-background/70 backdrop-blur p-4 sticky top-0 h-screen overflow-y-auto">
+        <aside className="hidden w-[300px] border-l border-border/70 bg-background/80 p-4 backdrop-blur supports-[backdrop-filter]:bg-background/70 md:sticky md:top-0 md:block md:h-screen md:overflow-y-auto">
           <PropertiesInspector
             block={selectedBlock}
             onChange={handleUpdateBlock}

@@ -12,5 +12,18 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  return <DashboardLayout />;
+  return (
+    <DashboardLayout
+      user={{
+        name:
+          user.user_metadata?.full_name ??
+          user.user_metadata?.name ??
+          user.email?.split("@")[0] ??
+          "Пользователь",
+        email: user.email ?? null,
+        avatarUrl: user.user_metadata?.avatar_url ?? null,
+        plan: "Hobby Plan",
+      }}
+    />
+  );
 }
