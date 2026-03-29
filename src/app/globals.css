@@ -124,3 +124,14 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Keep root Puck dropzone stretched to canvas height. */
+[data-puck-entry] {
+  height: 100%;
+  min-height: 100%;
+}
+
+[data-puck-entry] [data-puck-dropzone][data-puck-root-dropzone] {
+  min-height: 100% !important;
+  height: 100%;
+}

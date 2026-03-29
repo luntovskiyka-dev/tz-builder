@@ -16,12 +16,8 @@ function pickMainText(block: CanvasBlock): string {
 
 function pickMeta(block: CanvasBlock): string | null {
   const p = block.props as Record<string, unknown>;
-  if (block.type === "columns") return `${String(p.variant ?? "2")} колонки`;
-  if (block.type === "grid") return `${String(p.columns ?? "3")} колонки`;
-  if (block.type === "faq" && Array.isArray(p.items)) return `${p.items.length} вопросов`;
-  if (block.type === "stat" && Array.isArray(p.items)) return `${p.items.length} показателей`;
-  if (block.type === "footer" && Array.isArray(p.links)) return `${p.links.length} ссылок`;
-  if (block.type === "cta" && Array.isArray(p.buttons)) return `${p.buttons.length} кнопок`;
+  if (block.type === "grid") return `${String(p.numColumns ?? 4)} колонки`;
+  if (block.type === "stats" && Array.isArray(p.items)) return `${p.items.length} показателей`;
   return null;
 }
 

@@ -3,6 +3,7 @@ import type {
   CanvasBlock,
   InspectorFieldDefinition,
 } from "@/lib/blockTypes";
+import { CARD_LUCIDE_ICON_OPTIONS, DEFAULT_CARD_ICON } from "@/lib/cardLucideIcons";
 
 type PuckComponentConfig = {
   label: string;
@@ -11,35 +12,59 @@ type PuckComponentConfig = {
   render: (props: Record<string, unknown>) => string;
 };
 
+/** Subfields for the shared `layout` object; which ones appear is filtered in `resolveFields` by parent type. */
+export const LAYOUT_OBJECT_SUBFIELDS: InspectorFieldDefinition[] = [
+  { key: "spanCol", label: "Span columns", type: "number" },
+  { key: "spanRow", label: "Span rows", type: "number" },
+  { key: "grow", label: "Grow", type: "number" },
+  { key: "padding", label: "Padding", type: "text", placeholder: "e.g. 16px" },
+];
+
+export const BLOCK_TYPES_WITH_LAYOUT = [
+  "heading",
+  "text",
+  "richtext",
+  "card",
+  "template",
+] as const;
+
+export type BlockTypeWithLayout = (typeof BLOCK_TYPES_WITH_LAYOUT)[number];
+
+export function blockTypeHasLayout(typeId: string): typeId is BlockTypeWithLayout {
+  return (BLOCK_TYPES_WITH_LAYOUT as readonly string[]).includes(typeId);
+}
+
+const layoutField: InspectorFieldDefinition = {
+  key: "layout",
+  label: "Layout",
+  type: "object",
+  objectFields: LAYOUT_OBJECT_SUBFIELDS,
+};
+
 const PUCK_COMPONENTS: Record<string, PuckComponentConfig> = {
   grid: {
     label: "Grid",
     defaultProps: {
-      columns: "3",
-      gap: 16,
+      numColumns: 4,
+      gap: 24,
     },
     fields: [
       {
-        key: "columns",
-        label: "Колонки",
-        type: "radio",
-        options: [
-          { value: "2", label: "2" },
-          { value: "3", label: "3" },
-          { value: "4", label: "4" },
-        ],
+        key: "numColumns",
+        label: "Number of columns",
+        type: "number",
       },
       { key: "gap", label: "Gap", type: "number" },
     ],
-    render: (props) => String(props.columns ?? "3"),
+    render: (props) => String(props.numColumns ?? 4),
   },
   flex: {
     label: "Flex",
     defaultProps: {
+      justifyContent: "start",
       direction: "row",
-      align: "center",
-      justify: "between",
-      gap: 12,
+      gap: 24,
+      wrap: "wrap",
     },
     fields: [
       {
@@ -52,287 +77,438 @@ const PUCK_COMPONENTS: Record<string, PuckComponentConfig> = {
         ],
       },
       {
-        key: "align",
-        label: "Align",
+        key: "justifyContent",
+        label: "Justify Content",
         type: "radio",
         options: [
           { value: "start", label: "Start" },
           { value: "center", label: "Center" },
-          { value: "end", label: "End" },
-        ],
-      },
-      {
-        key: "justify",
-        label: "Justify",
-        type: "radio",
-        options: [
-          { value: "start", label: "Start" },
-          { value: "center", label: "Center" },
-          { value: "between", label: "Between" },
           { value: "end", label: "End" },
         ],
       },
       { key: "gap", label: "Gap", type: "number" },
+      {
+        key: "wrap",
+        label: "Wrap",
+        type: "radio",
+        options: [
+          { value: "wrap", label: "true" },
+          { value: "nowrap", label: "false" },
+        ],
+      },
     ],
-    render: (props) => `${String(props.direction ?? "row")} / ${String(props.justify ?? "between")}`,
+    render: (props) => `${String(props.direction ?? "row")} / ${String(props.justifyContent ?? "start")}`,
   },
   space: {
     label: "Space",
     defaultProps: {
-      size: 32,
+      direction: "both",
+      size: "24px",
     },
-    fields: [{ key: "size", label: "Размер (px)", type: "number" }],
-    render: (props) => `${String(props.size ?? 32)}px`,
+    fields: [
+      {
+        key: "size",
+        label: "Size",
+        type: "select",
+        options: [
+          { label: "8px", value: "8px" },
+          { label: "16px", value: "16px" },
+          { label: "24px", value: "24px" },
+          { label: "32px", value: "32px" },
+          { label: "40px", value: "40px" },
+          { label: "48px", value: "48px" },
+          { label: "56px", value: "56px" },
+          { label: "64px", value: "64px" },
+          { label: "72px", value: "72px" },
+          { label: "80px", value: "80px" },
+          { label: "88px", value: "88px" },
+          { label: "96px", value: "96px" },
+          { label: "104px", value: "104px" },
+          { label: "112px", value: "112px" },
+          { label: "120px", value: "120px" },
+          { label: "128px", value: "128px" },
+          { label: "136px", value: "136px" },
+          { label: "144px", value: "144px" },
+          { label: "152px", value: "152px" },
+          { label: "160px", value: "160px" },
+        ],
+      },
+      {
+        key: "direction",
+        label: "Direction",
+        type: "radio",
+        options: [
+          { value: "vertical", label: "Vertical" },
+          { value: "horizontal", label: "Horizontal" },
+          { value: "both", label: "Both" },
+        ],
+      },
+    ],
+    render: (props) => `${String(props.size ?? "24px")}`,
   },
   heading: {
     label: "Heading",
     defaultProps: {
-      text: "Заголовок секции",
-      level: "h2",
-      showText: true,
+      align: "left",
+      text: "Heading",
+      size: "m",
+      level: "",
+      layout: {},
     },
     fields: [
-      { key: "text", label: "Текст заголовка", type: "text", visibilityKey: "showText", alignKey: "text" },
+      { key: "text", label: "Text", type: "textarea" },
       {
-        key: "level",
-        label: "Уровень",
-        type: "radio",
+        key: "size",
+        label: "Size",
+        type: "select",
         options: [
-          { value: "h1", label: "H1" },
-          { value: "h2", label: "H2" },
-          { value: "h3", label: "H3" },
+          { value: "xxxl", label: "XXXL" },
+          { value: "xxl", label: "XXL" },
+          { value: "xl", label: "XL" },
+          { value: "l", label: "L" },
+          { value: "m", label: "M" },
+          { value: "s", label: "S" },
+          { value: "xs", label: "XS" },
         ],
       },
+      {
+        key: "level",
+        label: "Level",
+        type: "select",
+        options: [
+          { value: "", label: "Default" },
+          { value: "h1", label: "h1" },
+          { value: "h2", label: "h2" },
+          { value: "h3", label: "h3" },
+          { value: "h4", label: "h4" },
+          { value: "h5", label: "h5" },
+          { value: "h6", label: "h6" },
+        ],
+      },
+      {
+        key: "align",
+        label: "Align",
+        type: "radio",
+        options: [
+          { value: "left", label: "Left" },
+          { value: "center", label: "Center" },
+          { value: "right", label: "Right" },
+        ],
+      },
+      layoutField,
     ],
     render: (props) => String(props.text ?? ""),
   },
   text: {
     label: "Text",
     defaultProps: {
-      text: "Текстовый блок",
-      showText: true,
+      align: "left",
+      text: "Text",
+      size: "m",
+      color: "default",
+      layout: {},
     },
     fields: [
       {
         key: "text",
-        label: "Текст",
+        label: "Text",
         type: "textarea",
-        rows: 5,
-        visibilityKey: "showText",
-        alignKey: "text",
       },
+      {
+        key: "size",
+        label: "Size",
+        type: "select",
+        options: [
+          { label: "S", value: "s" },
+          { label: "M", value: "m" },
+        ],
+      },
+      {
+        key: "align",
+        label: "Align",
+        type: "radio",
+        options: [
+          { label: "Left", value: "left" },
+          { label: "Center", value: "center" },
+          { label: "Right", value: "right" },
+        ],
+      },
+      {
+        key: "color",
+        label: "Color",
+        type: "radio",
+        options: [
+          { label: "Default", value: "default" },
+          { label: "Muted", value: "muted" },
+        ],
+      },
+      { key: "maxWidth", label: "Max Width", type: "text", placeholder: "800px" },
+      layoutField,
     ],
     render: (props) => String(props.text ?? ""),
   },
   richtext: {
     label: "RichText",
     defaultProps: {
-      content: "<p>Rich text content</p>",
+      richtext: "<h2>Heading</h2><p>Body</p>",
+      layout: {},
     },
-    fields: [{ key: "content", label: "HTML", type: "textarea", rows: 6 }],
-    render: (props) => String(props.content ?? ""),
-  },
-  image: {
-    label: "Image",
-    defaultProps: {
-      url: "",
-      alt: "",
-      caption: "",
-      showCaption: false,
-    },
-    fields: [
-      { key: "url", label: "URL изображения", type: "text", placeholder: "https://..." },
-      { key: "alt", label: "Alt", type: "text" },
-      { key: "caption", label: "Подпись", type: "text", visibilityKey: "showCaption" },
-    ],
-    render: (props) => String(props.url ?? ""),
-  },
-  columns: {
-    label: "Columns",
-    defaultProps: {
-      variant: "2",
-      column1Title: "Колонка 1",
-      column1Text: "Текст 1",
-      column2Title: "Колонка 2",
-      column2Text: "Текст 2",
-      column3Title: "Колонка 3",
-      column3Text: "Текст 3",
-      column4Title: "Колонка 4",
-      column4Text: "Текст 4",
-    },
-    fields: [
-      {
-        key: "variant",
-        label: "Колонки",
-        type: "radio",
-        options: [
-          { value: "2", label: "2" },
-          { value: "3", label: "3" },
-          { value: "4", label: "4" },
-        ],
-      },
-      { key: "column1Title", label: "Заголовок 1", type: "text", visibleWhen: { key: "variant", values: ["2", "3", "4"] } },
-      { key: "column1Text", label: "Текст 1", type: "textarea", rows: 3, visibleWhen: { key: "variant", values: ["2", "3", "4"] } },
-      { key: "column2Title", label: "Заголовок 2", type: "text", visibleWhen: { key: "variant", values: ["2", "3", "4"] } },
-      { key: "column2Text", label: "Текст 2", type: "textarea", rows: 3, visibleWhen: { key: "variant", values: ["2", "3", "4"] } },
-      { key: "column3Title", label: "Заголовок 3", type: "text", visibleWhen: { key: "variant", values: ["3", "4"] } },
-      { key: "column3Text", label: "Текст 3", type: "textarea", rows: 3, visibleWhen: { key: "variant", values: ["3", "4"] } },
-      { key: "column4Title", label: "Заголовок 4", type: "text", visibleWhen: { key: "variant", values: ["4"] } },
-      { key: "column4Text", label: "Текст 4", type: "textarea", rows: 3, visibleWhen: { key: "variant", values: ["4"] } },
-    ],
-    render: (props) => String(props.variant ?? "2"),
+    fields: [{ key: "richtext", label: "Rich text", type: "richtext" }, layoutField],
+    render: (props) => String(props.richtext ?? ""),
   },
   button: {
     label: "Button",
     defaultProps: {
-      text: "Нажми меня",
-      url: "",
+      label: "Button",
+      href: "#",
       variant: "primary",
     },
     fields: [
-      { key: "text", label: "Текст", type: "text" },
-      { key: "url", label: "URL", type: "text", placeholder: "https://..." },
+      { key: "label", label: "Label", type: "text" },
+      { key: "href", label: "Href", type: "text", placeholder: "#" },
       {
         key: "variant",
-        label: "Вариант",
+        label: "Variant",
         type: "radio",
         options: [
-          { value: "primary", label: "Primary" },
-          { value: "secondary", label: "Secondary" },
-          { value: "ghost", label: "Ghost" },
+          { value: "primary", label: "primary" },
+          { value: "secondary", label: "secondary" },
         ],
       },
     ],
-    render: (props) => String(props.text ?? ""),
+    render: (props) => String(props.label ?? ""),
   },
   card: {
     label: "Card",
     defaultProps: {
-      title: "Card title",
-      text: "Card description",
-      imageUrl: "",
-      buttonText: "Подробнее",
-      buttonUrl: "",
+      title: "Title",
+      description: "Description",
+      icon: DEFAULT_CARD_ICON,
+      mode: "flat",
+      layout: {},
     },
     fields: [
-      { key: "title", label: "Заголовок", type: "text" },
-      { key: "text", label: "Текст", type: "textarea", rows: 4 },
-      { key: "imageUrl", label: "Image URL", type: "text", placeholder: "https://..." },
-      { key: "buttonText", label: "Текст кнопки", type: "text" },
-      { key: "buttonUrl", label: "URL кнопки", type: "text", placeholder: "https://..." },
+      { key: "title", label: "Title", type: "text" },
+      { key: "description", label: "Description", type: "textarea", rows: 4 },
+      {
+        key: "icon",
+        label: "Icon (Lucide)",
+        type: "select",
+        options: [...CARD_LUCIDE_ICON_OPTIONS],
+      },
+      {
+        key: "mode",
+        label: "Mode",
+        type: "radio",
+        options: [
+          { value: "card", label: "card" },
+          { value: "flat", label: "flat" },
+        ],
+      },
+      layoutField,
     ],
     render: (props) => String(props.title ?? ""),
   },
   hero: {
     label: "Hero",
     defaultProps: {
-      title: "Hero heading",
-      text: "Hero description text",
-      imageUrl: "",
-      buttons: [{ text: "Начать", url: "" }],
-      showButtons: true,
+      title: "Hero",
+      align: "left",
+      description: "<p>Description</p>",
+      quote: "",
+      buttons: [{ label: "Learn more", href: "#", variant: "primary" }],
+      image: {
+        url: "",
+        mode: "inline",
+        content: [],
+      },
+      padding: "64px",
     },
     fields: [
-      { key: "title", label: "Заголовок", type: "text", alignKey: "title" },
-      { key: "text", label: "Текст", type: "textarea", rows: 5, alignKey: "text" },
-      { key: "imageUrl", label: "Image URL", type: "text", placeholder: "https://..." },
-      { key: "buttons", label: "Кнопки", type: "button-list", visibilityKey: "showButtons", alignKey: "buttons" },
+      { key: "title", label: "Title", type: "text" },
+      { key: "description", label: "Description", type: "richtext" },
+      { key: "quote", label: "Quote", type: "textarea", rows: 3, placeholder: "Optional external quote" },
+      {
+        key: "align",
+        label: "Align",
+        type: "radio",
+        options: [
+          { value: "left", label: "left" },
+          { value: "center", label: "center" },
+        ],
+      },
+      { key: "buttons", label: "Buttons", type: "button-list" },
+      {
+        key: "image",
+        label: "Image",
+        type: "object",
+        objectFields: [
+          { key: "content", label: "Content", type: "slot" },
+          { key: "url", label: "Image URL", type: "text", placeholder: "https://..." },
+          {
+            key: "mode",
+            label: "Image mode",
+            type: "radio",
+            options: [
+              { value: "inline", label: "inline" },
+              { value: "background", label: "bg" },
+              { value: "custom", label: "custom" },
+            ],
+          },
+        ],
+        visibleWhen: { key: "align", values: ["left"] },
+      },
+      { key: "padding", label: "Padding", type: "select", options: [{ value: "32px", label: "32px" }, { value: "48px", label: "48px" }, { value: "64px", label: "64px" }, { value: "80px", label: "80px" }] },
     ],
     render: (props) => String(props.title ?? ""),
   },
   logos: {
     label: "Logos",
     defaultProps: {
-      title: "Нам доверяют",
-      items: ["https://logo-1.svg", "https://logo-2.svg"],
-      columns: "4",
+      logos: [
+        {
+          alt: "Google",
+          imageUrl: "https://logolook.net/wp-content/uploads/2021/06/Google-Logo.png",
+        },
+        {
+          alt: "Google",
+          imageUrl: "https://logolook.net/wp-content/uploads/2021/06/Google-Logo.png",
+        },
+        {
+          alt: "Google",
+          imageUrl: "https://logolook.net/wp-content/uploads/2021/06/Google-Logo.png",
+        },
+      ],
     },
-    fields: [
-      { key: "title", label: "Заголовок", type: "text" },
-      { key: "items", label: "Логотипы (URL)", type: "string-list" },
-      {
-        key: "columns",
-        label: "Колонки",
-        type: "radio",
-        options: [
-          { value: "3", label: "3" },
-          { value: "4", label: "4" },
-          { value: "5", label: "5" },
-          { value: "6", label: "6" },
-        ],
-      },
-    ],
-    render: (props) => String(props.title ?? ""),
+    fields: [{ key: "logos", label: "Logos", type: "logos-list" }],
+    render: (_props) => "Logos",
   },
-  cta: {
-    label: "CTA",
+  stats: {
+    label: "Stats",
     defaultProps: {
-      title: "Готовы начать?",
-      text: "Оставьте заявку и мы свяжемся с вами.",
-      buttons: [{ text: "Связаться", url: "" }],
-      showButtons: true,
-    },
-    fields: [
-      { key: "title", label: "Заголовок", type: "text", alignKey: "title" },
-      { key: "text", label: "Текст", type: "textarea", rows: 4, alignKey: "text" },
-      { key: "buttons", label: "Кнопки", type: "button-list", visibilityKey: "showButtons", alignKey: "buttons" },
-    ],
-    render: (props) => String(props.title ?? ""),
-  },
-  faq: {
-    label: "FAQ",
-    defaultProps: {
-      title: "Часто задаваемые вопросы",
-      items: ["Вопрос 1", "Вопрос 2"],
-      showTitle: true,
-    },
-    fields: [
-      { key: "title", label: "Заголовок", type: "text", visibilityKey: "showTitle", alignKey: "title" },
-      { key: "items", label: "Вопросы", type: "string-list" },
-    ],
-    render: (props) => String(props.title ?? ""),
-  },
-  footer: {
-    label: "Footer",
-    defaultProps: {
-      copyright: "© 2026 ProtoSpec",
-      links: ["Privacy", "Terms"],
-      showLinks: true,
-    },
-    fields: [
-      { key: "copyright", label: "Копирайт", type: "text", alignKey: "copyright" },
-      { key: "links", label: "Ссылки", type: "string-list", visibilityKey: "showLinks" },
-    ],
-    render: (props) => String(props.copyright ?? ""),
-  },
-  stat: {
-    label: "Stat",
-    defaultProps: {
-      title: "Наши показатели",
       items: [
-        { value: "100+", label: "Клиентов" },
-        { value: "12", label: "Лет опыта" },
+        { title: "1,000", description: "Stat" },
       ],
     },
     fields: [
-      { key: "title", label: "Заголовок", type: "text" },
       { key: "items", label: "Показатели", type: "stats-list" },
     ],
-    render: (props) => String(props.title ?? ""),
+    render: () => "Stats",
   },
   template: {
     label: "Template",
     defaultProps: {
-      templateName: "Landing v1",
-      description: "Готовый шаблон секции",
-      slots: ["header", "hero", "cta", "footer"],
+      template: "example_1",
+      children: [],
+      layout: {},
     },
     fields: [
-      { key: "templateName", label: "Имя шаблона", type: "text" },
-      { key: "description", label: "Описание", type: "textarea", rows: 4 },
-      { key: "slots", label: "Слоты", type: "string-list" },
+      {
+        key: "template",
+        label: "Template",
+        type: "select",
+        options: [
+          { label: "Blank", value: "blank" },
+          { label: "Example 1", value: "example_1" },
+          { label: "Example 2", value: "example_2" },
+          { label: "Save current as new template", value: "__save_new__" },
+        ],
+      },
+      layoutField,
     ],
-    render: (props) => String(props.templateName ?? ""),
+    render: (props) => String(props.template ?? ""),
+  },
+  header: {
+    label: "Header",
+    defaultProps: {
+      logoText: "Logo",
+      logoImageUrl: "",
+      logoHref: "/",
+      navItems: [
+        { label: "Home", href: "/", variant: "primary" },
+        { label: "Docs", href: "#", variant: "secondary" },
+      ],
+      behavior: "static",
+      backgroundColor: "",
+      textColor: "",
+      ctaLabel: "",
+      ctaHref: "",
+      alignNav: "end",
+      showMobileMenu: true,
+    },
+    fields: [
+      { key: "logoText", label: "Logo text", type: "text" },
+      { key: "logoImageUrl", label: "Logo image URL", type: "text", placeholder: "https://..." },
+      { key: "logoHref", label: "Logo link", type: "text", placeholder: "/" },
+      { key: "navItems", label: "Nav items", type: "button-list" },
+      {
+        key: "behavior",
+        label: "Behavior",
+        type: "radio",
+        options: [
+          { value: "static", label: "Static" },
+          { value: "sticky", label: "Sticky" },
+        ],
+      },
+      { key: "backgroundColor", label: "Background", type: "text", placeholder: "#fff" },
+      { key: "textColor", label: "Text color", type: "text", placeholder: "#111" },
+      { key: "ctaLabel", label: "CTA label", type: "text" },
+      { key: "ctaHref", label: "CTA href", type: "text" },
+      {
+        key: "alignNav",
+        label: "Align nav",
+        type: "radio",
+        options: [
+          { value: "start", label: "Start" },
+          { value: "center", label: "Center" },
+          { value: "end", label: "End" },
+        ],
+      },
+      { key: "showMobileMenu", label: "Mobile menu", type: "toggle" },
+    ],
+    render: (props) => String(props.logoText ?? ""),
+  },
+  footer: {
+    label: "Footer",
+    defaultProps: {
+      columns: [
+        { title: "Product", description: "Overview, pricing" },
+        { title: "Company", description: "About, careers" },
+      ],
+      copyright: "© 2026",
+      backgroundColor: "",
+      textColor: "",
+      paddingY: "48px",
+      socialLinks: [{ label: "Twitter", href: "#", variant: "secondary" }],
+      newsletter: false,
+      newsletterPlaceholder: "Email address",
+    },
+    fields: [
+      { key: "columns", label: "Columns", type: "stats-list" },
+      { key: "copyright", label: "Copyright", type: "text" },
+      { key: "backgroundColor", label: "Background", type: "text" },
+      { key: "textColor", label: "Text color", type: "text" },
+      {
+        key: "paddingY",
+        label: "Vertical padding",
+        type: "select",
+        options: [
+          { label: "32px", value: "32px" },
+          { label: "48px", value: "48px" },
+          { label: "64px", value: "64px" },
+          { label: "80px", value: "80px" },
+        ],
+      },
+      { key: "socialLinks", label: "Social links", type: "button-list" },
+      { key: "newsletter", label: "Newsletter", type: "toggle" },
+      {
+        key: "newsletterPlaceholder",
+        label: "Newsletter placeholder",
+        type: "text",
+        visibleWhen: { key: "newsletter", values: ["true"] },
+      },
+    ],
+    render: (props) => String(props.copyright ?? ""),
   },
 };
 
@@ -356,7 +532,7 @@ export const BLOCK_CATEGORIES = [
     ],
   },
   {
-    id: "actions",
+    id: "interactive",
     label: "Actions",
     blocks: [{ id: "button", label: "Button", defaultProps: PUCK_COMPONENTS.button.defaultProps }],
   },
@@ -367,13 +543,16 @@ export const BLOCK_CATEGORIES = [
       { id: "card", label: "Card", defaultProps: PUCK_COMPONENTS.card.defaultProps },
       { id: "hero", label: "Hero", defaultProps: PUCK_COMPONENTS.hero.defaultProps },
       { id: "logos", label: "Logos", defaultProps: PUCK_COMPONENTS.logos.defaultProps },
-      { id: "image", label: "Image", defaultProps: PUCK_COMPONENTS.image.defaultProps },
-      { id: "columns", label: "Columns", defaultProps: PUCK_COMPONENTS.columns.defaultProps },
-      { id: "cta", label: "CTA", defaultProps: PUCK_COMPONENTS.cta.defaultProps },
-      { id: "faq", label: "FAQ", defaultProps: PUCK_COMPONENTS.faq.defaultProps },
-      { id: "footer", label: "Footer", defaultProps: PUCK_COMPONENTS.footer.defaultProps },
-      { id: "stat", label: "Stat", defaultProps: PUCK_COMPONENTS.stat.defaultProps },
+      { id: "stats", label: "Stats", defaultProps: PUCK_COMPONENTS.stats.defaultProps },
       { id: "template", label: "Template", defaultProps: PUCK_COMPONENTS.template.defaultProps },
+    ],
+  },
+  {
+    id: "chrome",
+    label: "Chrome",
+    blocks: [
+      { id: "header", label: "Header", defaultProps: PUCK_COMPONENTS.header.defaultProps },
+      { id: "footer", label: "Footer", defaultProps: PUCK_COMPONENTS.footer.defaultProps },
     ],
   },
 ] as const;

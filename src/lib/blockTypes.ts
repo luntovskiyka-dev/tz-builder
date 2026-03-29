@@ -8,12 +8,17 @@ export type InspectorFieldType =
   | "toggle"
   | "text"
   | "textarea"
+  | "richtext"
+  | "object"
+  | "slot"
+  | "select"
   | "radio"
   | "number"
   | "date"
   | "string-list"
   | "button-list"
-  | "stats-list";
+  | "stats-list"
+  | "logos-list";
 
 export interface InspectorFieldOption {
   value: string;
@@ -30,6 +35,7 @@ export interface InspectorFieldDefinition {
   placeholder?: string;
   rows?: number;
   options?: InspectorFieldOption[];
+  objectFields?: InspectorFieldDefinition[];
 }
 
 export interface BlockInspectorSchema {

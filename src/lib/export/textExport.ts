@@ -5,11 +5,7 @@ export type Block = CanvasBlock;
 const BLOCK_LABELS: Record<string, string> = {
   heading: "Заголовок",
   text: "Текст",
-  image: "Изображение",
-  columns: "Колонки",
-  cta: "CTA секция",
-  faq: "FAQ",
-  footer: "Подвал",
+  stats: "Показатели",
 };
 
 function str(val: unknown): string {
@@ -29,54 +25,17 @@ function generateBlockLines(block: Block): string[] {
   if (str(p.text)) lines.push(`- Текст: ${str(p.text)}`);
   if (str(p.url)) lines.push(`- URL: ${str(p.url)}`);
 
-  if (block.type === "columns") {
-    lines.push(`- Колонок: ${String(p.variant ?? "2")}`);
-    for (let i = 1; i <= 4; i++) {
-      const t = str(p[`column${i}Title`]);
-      const x = str(p[`column${i}Text`]);
-      if (t) lines.push(`- Колонка ${i} заголовок: ${t}`);
-      if (x) lines.push(`- Колонка ${i} текст: ${x}`);
-    }
-  }
-
-  if (block.type === "faq") {
-    const items = arr(p.items).filter((v): v is string => typeof v === "string" && v.length > 0);
-    if (items.length) {
-      lines.push("- Вопросы:");
-      for (const item of items) lines.push(`  - ${item}`);
-    }
-  }
-
-  if (block.type === "stat") {
+  if (block.type === "stats") {
     const items = arr(p.items);
     if (items.length) {
       lines.push("- Показатели:");
       for (const item of items) {
         const it = item as Record<string, unknown>;
-        const value = str(it.value);
-        const label = str(it.label);
-        if (value || label) lines.push(`  - ${value}${label ? ` — ${label}` : ""}`);
+        const title = str(it.title ?? it.value);
+        const description = str(it.description ?? it.label);
+        if (title || description) lines.push(`  - ${title}${description ? ` — ${description}` : ""}`);
       }
     }
-  }
-
-  if (block.type === "cta") {
-    const buttons = arr(p.buttons);
-    if (buttons.length) {
-      lines.push("- Кнопки:");
-      for (const btn of buttons) {
-        const b = btn as Record<string, unknown>;
-        const label = str(b.text) || str(b.label);
-        const url = str(b.url) || str(b.link);
-        if (label) lines.push(`  - ${label}${url ? ` (${url})` : ""}`);
-      }
-    }
-  }
-
-  if (block.type === "footer") {
-    if (str(p.copyright)) lines.push(`- Копирайт: ${str(p.copyright)}`);
-    const links = arr(p.links).filter((v): v is string => typeof v === "string" && v.length > 0);
-    if (links.length) lines.push(`- Ссылки: ${links.join(", ")}`);
   }
 
   return lines.length ? lines : ["- (нет данных)"];

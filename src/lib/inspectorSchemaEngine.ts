@@ -74,7 +74,8 @@ export function applyVariantPresets(
 
 export function getListAppendItem(fieldType: InspectorFieldDefinition["type"]): unknown {
   if (fieldType === "button-list") return { text: "", url: "" };
-  if (fieldType === "stats-list") return { value: "", label: "" };
+  if (fieldType === "stats-list") return { title: "", description: "" };
+  if (fieldType === "logos-list") return { alt: "", imageUrl: "" };
   return "";
 }
 

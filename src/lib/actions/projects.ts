@@ -1,6 +1,8 @@
 "use server";
 
+import type { Data } from "@puckeditor/core";
 import { createServerClient } from "@/lib/supabase/server";
+import { puckDataToCanvasBlocks } from "@/lib/puckDataToCanvasBlocks";
 
 /**
  * Expected Supabase table "projects":
@@ -40,6 +42,54 @@ export type LoadProjectsResult = {
 export type DeleteProjectResult = {
   error?: string;
 };
+
+/** Primary key filter: DB may use bigint/serial; PostgREST matches reliably with a number. */
+function coerceProjectIdForFilter(projectId: string): string | number {
+  if (/^\d+$/.test(projectId)) {
+    const n = Number(projectId);
+    if (Number.isSafeInteger(n)) return n;
+  }
+  return projectId;
+}
+
+/**
+ * Supabase may return `blocks` as:
+ * - jsonb array (CanvasBlock[])
+ * - text / double-encoded JSON string
+ * - full Puck document `{ content, zones, root }` instead of a flat array
+ */
+function unwrapJsonValue(raw: unknown): unknown {
+  let v: unknown = raw;
+  for (let i = 0; i < 8; i += 1) {
+    if (typeof v !== "string") break;
+    const t = v.trim();
+    if (!t || t === "null") return null;
+    try {
+      v = JSON.parse(t) as unknown;
+    } catch {
+      return raw;
+    }
+  }
+  return v;
+}
+
+function normalizeBlocksFromDb(raw: unknown): unknown[] {
+  const v = unwrapJsonValue(raw);
+  if (v === null || v === undefined) return [];
+  if (Array.isArray(v)) return v;
+  if (typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    if (Array.isArray(o.blocks)) return o.blocks;
+    if (Array.isArray(o.content)) {
+      return puckDataToCanvasBlocks({
+        content: o.content as Data["content"],
+        zones: (o.zones as Data["zones"]) ?? {},
+        root: (o.root as Data["root"]) ?? { props: { title: "" } },
+      } as Partial<Data>);
+    }
+  }
+  return [];
+}
 
 /**
  * Saves a project. If projectId is provided, updates it; otherwise creates a new project.
@@ -81,7 +131,7 @@ export async function saveProjectAction(
           name: name || undefined,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", projectId)
+        .eq("id", coerceProjectIdForFilter(projectId))
         .eq("user_id", user.id);
 
       if (error) {
@@ -143,7 +193,7 @@ export async function loadProjectsAction(): Promise<LoadProjectsResult> {
     }
     return {
       projects: (data ?? []).map((row) => ({
-        id: row.id,
+        id: String(row.id),
         name: row.name ?? "Без названия",
         updated_at: row.updated_at ?? new Date().toISOString(),
       })),
@@ -176,10 +226,12 @@ export async function loadProjectAction(
       return { error: "Войдите в аккаунт, чтобы загрузить проект" };
     }
 
+    const idFilter = coerceProjectIdForFilter(projectId);
+
     const { data, error } = await supabase
       .from("projects")
       .select("blocks, spec")
-      .eq("id", projectId)
+      .eq("id", idFilter)
       .eq("user_id", user.id)
       .single();
 
@@ -192,7 +244,7 @@ export async function loadProjectAction(
       const { data: blocksData, error: blocksError } = await supabase
         .from("projects")
         .select("blocks")
-        .eq("id", projectId)
+        .eq("id", idFilter)
         .eq("user_id", user.id)
         .single();
 
@@ -202,7 +254,7 @@ export async function loadProjectAction(
       }
 
       return {
-        blocks: Array.isArray(blocksData?.blocks) ? blocksData.blocks : [],
+        blocks: normalizeBlocksFromDb(blocksData?.blocks),
         spec: null,
         schemaVersion: 0,
       };
@@ -212,7 +264,7 @@ export async function loadProjectAction(
       return { error: "Проект не найден" };
     }
     return {
-      blocks: Array.isArray(data.blocks) ? data.blocks : [],
+      blocks: normalizeBlocksFromDb(data.blocks),
       spec: (data.spec as string | null) ?? null,
       schemaVersion: 0,
     };
@@ -258,7 +310,7 @@ export async function saveProjectSpecAction(
         spec: trimmed || null,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", projectId)
+      .eq("id", coerceProjectIdForFilter(projectId))
       .eq("user_id", user.id);
 
     if (error) {
@@ -298,7 +350,7 @@ export async function deleteProjectAction(
     const { error } = await supabase
       .from("projects")
       .delete()
-      .eq("id", projectId)
+      .eq("id", coerceProjectIdForFilter(projectId))
       .eq("user_id", user.id);
 
     if (error) {

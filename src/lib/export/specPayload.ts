@@ -43,7 +43,10 @@ export function buildStructuredSpecPayload(blocks: unknown[]): Array<Record<stri
           ? field.visibleWhen.values.includes(String(props[field.visibleWhen.key] ?? ""))
           : true),
       valuePreview:
-        field.type === "string-list" || field.type === "button-list" || field.type === "stats-list"
+        field.type === "string-list" ||
+        field.type === "button-list" ||
+        field.type === "stats-list" ||
+        field.type === "logos-list"
           ? Array.isArray(props[field.key])
             ? (props[field.key] as unknown[]).length
             : 0

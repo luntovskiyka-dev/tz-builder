@@ -5,15 +5,11 @@ import { Puck, type Data } from "@puckeditor/core";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  loadProjectFromStorage,
-  saveProjectToStorage,
-} from "@/utils/storage";
-import {
   loadProjectsAction,
   loadProjectAction,
   saveProjectAction,
   deleteProjectAction,
-  type ProjectListItem
+  type ProjectListItem,
 } from "@/lib/actions/projects";
 import { Menu, X } from "lucide-react";
 import {
@@ -24,7 +20,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { type CanvasBlock } from "@/lib/blockTypes";
-import { canvasBlocksToPuckData, puckConfig, puckDataToCanvasBlocks } from "@/lib/puckEditor";
+import {
+  canvasBlocksToPuckData,
+  normalizePuckData,
+  puckConfig,
+  puckDataToCanvasBlocks,
+  puckOverrides,
+} from "@/lib/puckEditor";
 import { LeftSidebar } from "@/components/dashboard/LeftSidebar";
 import type { SavedStatus } from "@/components/dashboard/useCloudProjectSave";
 import { ProfileMenuContent } from "@/components/dashboard/ProfileMenuContent";
@@ -40,7 +42,7 @@ type DashboardLayoutUser = {
 
 export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
   const [canvasBlocks, setCanvasBlocks] = useState<CanvasBlock[]>([]);
-  const [puckData, setPuckData] = useState<Partial<Data>>({ content: [], root: { props: {} } });
+  const [puckData, setPuckData] = useState<Partial<Data>>({ content: [], root: { props: { title: "" } } });
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [currentProjectSpec, setCurrentProjectSpec] = useState<string | null>(null);
   const [projectsList, setProjectsList] = useState<ProjectListItem[]>([]);
@@ -52,6 +54,8 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  /** Puck keeps only the first `data` it sees; bump key when hydrating from API so the editor remounts. */
+  const [puckHydrationKey, setPuckHydrationKey] = useState(0);
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const logoutFormRef = useRef<HTMLFormElement>(null);
@@ -60,8 +64,8 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
   const autosaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveInFlightRef = useRef(false);
   const autosaveQueuedRef = useRef(false);
-  const lastSavedSignatureRef = useRef("[]");
   const latestSignatureRef = useRef("[]");
+  const lastSavedSignatureRef = useRef("[]");
   const latestBlocksRef = useRef<CanvasBlock[]>([]);
   const userName = user?.name?.trim() || "Пользователь";
   const userEmail = user?.email?.trim() || "no-email@example.com";
@@ -72,11 +76,19 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
     loadProjectsAction()
       .then((result) => {
         if (cancelled) return;
+        if (result.error) {
+          setDeleteError(result.error);
+          return;
+        }
         setProjectsList(result.projects ?? []);
         if (result.projects && result.projects.length > 0) {
           const mostRecent = result.projects[0];
           return loadProjectAction(mostRecent.id).then((projectResult) => {
             if (cancelled) return;
+            if (projectResult.error) {
+              setDeleteError(projectResult.error);
+              return;
+            }
             if (projectResult.blocks != null && Array.isArray(projectResult.blocks)) {
               const loadedBlocks = projectResult.blocks as CanvasBlock[];
               setCanvasBlocks(loadedBlocks);
@@ -85,20 +97,11 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
               const signature = JSON.stringify(loadedBlocks);
               latestSignatureRef.current = signature;
               lastSavedSignatureRef.current = signature;
-              setCurrentProjectId(mostRecent.id);
+              setCurrentProjectId(String(mostRecent.id));
               setCurrentProjectSpec(typeof projectResult.spec === "string" ? projectResult.spec : null);
+              setPuckHydrationKey((k) => k + 1);
             }
           });
-        }
-        const local = loadProjectFromStorage();
-        if (local?.blocks && Array.isArray(local.blocks)) {
-          const loadedBlocks = local.blocks as CanvasBlock[];
-          setCanvasBlocks(loadedBlocks);
-          setPuckData(canvasBlocksToPuckData(loadedBlocks));
-          latestBlocksRef.current = loadedBlocks;
-          const signature = JSON.stringify(loadedBlocks);
-          latestSignatureRef.current = signature;
-          lastSavedSignatureRef.current = signature;
         }
       })
       .finally(() => {
@@ -110,10 +113,6 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
   }, []);
 
   useEffect(() => {
-    saveProjectToStorage(canvasBlocks);
-  }, [canvasBlocks]);
-
-  useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
         setIsProfileMenuOpen(false);
@@ -123,9 +122,15 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
+  const projectNameForSave = useCallback(() => {
+    if (!currentProjectId) return "Без названия";
+    return (
+      projectsList.find((p) => String(p.id) === String(currentProjectId))?.name?.trim() ||
+      "Без названия"
+    );
+  }, [currentProjectId, projectsList]);
+
   const runAutosave = useCallback(async () => {
-    // Autosave updates only existing cloud projects.
-    // New project creation remains explicit via "Сохранить"/"Новый проект".
     if (!currentProjectId) return;
     const signature = latestSignatureRef.current;
     if (!signature || signature === lastSavedSignatureRef.current) return;
@@ -137,11 +142,10 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
     saveInFlightRef.current = true;
     setCloudSaveStatus("saving");
     try {
-      const currentName = projectsList.find((p) => p.id === currentProjectId)?.name ?? "Без названия";
       const formData = new FormData();
-      formData.set("name", currentName);
+      formData.set("name", projectNameForSave());
       formData.set("blocks", JSON.stringify(latestBlocksRef.current));
-      formData.set("projectId", currentProjectId);
+      formData.set("projectId", String(currentProjectId));
       const result = await saveProjectAction(null, formData);
       if (result.error) {
         setCloudSaveStatus("error");
@@ -150,6 +154,13 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
         lastSavedSignatureRef.current = signature;
         setCloudSaveStatus("saved");
         setDeleteError(null);
+        setProjectsList((prev) =>
+          prev.map((p) =>
+            String(p.id) === String(currentProjectId)
+              ? { ...p, updated_at: new Date().toISOString() }
+              : p,
+          ),
+        );
       }
     } finally {
       saveInFlightRef.current = false;
@@ -158,7 +169,7 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
         void runAutosave();
       }
     }
-  }, [currentProjectId, projectsList]);
+  }, [currentProjectId, projectNameForSave]);
 
   const scheduleAutosave = useCallback(() => {
     if (autosaveTimeoutRef.current) clearTimeout(autosaveTimeoutRef.current);
@@ -169,6 +180,10 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
   }, [runAutosave]);
 
   const handleSelectProject = useCallback(async (projectId: string) => {
+    if (autosaveTimeoutRef.current) {
+      clearTimeout(autosaveTimeoutRef.current);
+      autosaveTimeoutRef.current = null;
+    }
     setProjectsLoading(true);
     setDeleteError(null);
     const result = await loadProjectAction(projectId);
@@ -182,10 +197,11 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
       const signature = JSON.stringify(loadedBlocks);
       latestSignatureRef.current = signature;
       lastSavedSignatureRef.current = signature;
-      setCurrentProjectId(projectId);
+      setCurrentProjectId(String(projectId));
       setCurrentProjectSpec(typeof result.spec === "string" ? result.spec : null);
       setIsProfileMenuOpen(false);
       setCloudSaveStatus("saved");
+      setPuckHydrationKey((k) => k + 1);
     }
   }, []);
 
@@ -195,61 +211,73 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
   }, []);
 
   const handleCreateNewProject = useCallback(async () => {
-    const projectName = newProjectName.trim() || "Без названия";
-
-    // Always create a new local draft immediately.
-    setCanvasBlocks([]);
-    setPuckData({ content: [], root: { props: {} } });
+    const name = newProjectName.trim() || "Без названия";
+    if (autosaveTimeoutRef.current) {
+      clearTimeout(autosaveTimeoutRef.current);
+      autosaveTimeoutRef.current = null;
+    }
+    setPuckHydrationKey((k) => k + 1);
     setCurrentProjectId(null);
+    setCanvasBlocks([]);
+    setPuckData({ content: [], root: { props: { title: "" } } });
     setCurrentProjectSpec(null);
     latestBlocksRef.current = [];
     latestSignatureRef.current = "[]";
     lastSavedSignatureRef.current = "[]";
-    setCloudSaveStatus("saved");
     setDeleteError(null);
+    setCloudSaveStatus("saving");
 
     const formData = new FormData();
-    formData.set("name", projectName);
+    formData.set("name", name);
     formData.set("blocks", JSON.stringify([]));
     const result = await saveProjectAction(null, formData);
-    if (result.projectId) {
-      setCurrentProjectId(result.projectId);
-      setProjectsList((prev) => [
-        { id: result.projectId!, name: projectName, updated_at: new Date().toISOString() },
-        ...prev.filter((p) => p.id !== result.projectId),
-      ]);
-      setDeleteError(null);
-    } else if (result.error) {
-      setDeleteError(result.error);
+    if (result.error || result.projectId == null) {
       setCloudSaveStatus("error");
+      setDeleteError(result.error ?? "Не удалось создать проект");
+      return;
     }
+    const id = String(result.projectId);
+    setCurrentProjectId(id);
+    setProjectsList((prev) => [
+      { id, name, updated_at: new Date().toISOString() },
+      ...prev.filter((p) => String(p.id) !== id),
+    ]);
+    setCloudSaveStatus("saved");
     setProjectNameDialogOpen(false);
     setIsProfileMenuOpen(false);
   }, [newProjectName]);
 
   const handleSaveClick = useCallback(async () => {
-    const formData = new FormData();
-    formData.set("name", "Без названия");
-    formData.set("blocks", JSON.stringify(latestBlocksRef.current));
-    if (currentProjectId) formData.set("projectId", currentProjectId);
     setCloudSaveStatus("saving");
+    const formData = new FormData();
+    formData.set("name", projectNameForSave());
+    formData.set("blocks", JSON.stringify(latestBlocksRef.current));
+    if (currentProjectId) formData.set("projectId", String(currentProjectId));
     const result = await saveProjectAction(null, formData);
-    if (!result.projectId) {
+    if (result.error || result.projectId == null) {
       setCloudSaveStatus("error");
       setDeleteError(result.error ?? "Ошибка при сохранении проекта");
       return;
     }
+    const savedId = String(result.projectId);
     lastSavedSignatureRef.current = latestSignatureRef.current;
     setCloudSaveStatus("saved");
     setDeleteError(null);
     if (!currentProjectId) {
-      setCurrentProjectId(result.projectId);
+      const name = projectNameForSave();
+      setCurrentProjectId(savedId);
       setProjectsList((prev) => [
-        { id: result.projectId!, name: "Без названия", updated_at: new Date().toISOString() },
-        ...prev,
+        { id: savedId, name, updated_at: new Date().toISOString() },
+        ...prev.filter((p) => String(p.id) !== savedId),
       ]);
+    } else {
+      setProjectsList((prev) =>
+        prev.map((p) =>
+          String(p.id) === savedId ? { ...p, updated_at: new Date().toISOString() } : p,
+        ),
+      );
     }
-  }, [currentProjectId]);
+  }, [currentProjectId, projectNameForSave]);
 
   const handleDeleteProject = useCallback(async () => {
     if (!currentProjectId) return;
@@ -259,20 +287,35 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
       setDeleteError(result.error);
       return;
     }
-    setProjectsList((prev) => prev.filter((p) => p.id !== currentProjectId));
+    setProjectsList((prev) => prev.filter((p) => String(p.id) !== String(currentProjectId)));
     setCurrentProjectId(null);
     setCurrentProjectSpec(null);
     setCanvasBlocks([]);
-    setPuckData({ content: [], root: { props: {} } });
+    setPuckData({ content: [], root: { props: { title: "" } } });
     latestBlocksRef.current = [];
     latestSignatureRef.current = "[]";
     lastSavedSignatureRef.current = "[]";
     setCloudSaveStatus("saved");
+    setPuckHydrationKey((k) => k + 1);
   }, [currentProjectId]);
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
+    if (autosaveTimeoutRef.current) {
+      clearTimeout(autosaveTimeoutRef.current);
+      autosaveTimeoutRef.current = null;
+    }
+    if (currentProjectId && latestSignatureRef.current !== lastSavedSignatureRef.current) {
+      const formData = new FormData();
+      formData.set("name", projectNameForSave());
+      formData.set("blocks", JSON.stringify(latestBlocksRef.current));
+      formData.set("projectId", String(currentProjectId));
+      const result = await saveProjectAction(null, formData);
+      if (!result.error) {
+        lastSavedSignatureRef.current = latestSignatureRef.current;
+      }
+    }
     logoutFormRef.current?.requestSubmit();
-  }, []);
+  }, [currentProjectId, projectNameForSave]);
 
   const profileMenuContent = (
     <ProfileMenuContent
@@ -297,8 +340,9 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
   }, []);
 
   const handlePuckChange = useCallback((data: Data) => {
-    setPuckData(data);
-    const nextBlocks = puckDataToCanvasBlocks(data);
+    const normalized = normalizePuckData(data);
+    setPuckData(normalized);
+    const nextBlocks = puckDataToCanvasBlocks(normalized);
     latestBlocksRef.current = nextBlocks;
     latestSignatureRef.current = JSON.stringify(nextBlocks);
 
@@ -319,7 +363,14 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
   }, []);
 
   return (
-    <Puck config={puckConfig} data={puckData} onChange={handlePuckChange}>
+    <Puck
+      key={puckHydrationKey}
+      config={puckConfig}
+      data={puckData}
+      onChange={handlePuckChange}
+      overrides={puckOverrides}
+      iframe={{ enabled: false }}
+    >
       <Dialog open={projectNameDialogOpen} onOpenChange={setProjectNameDialogOpen}>
         <DialogContent className="sm:max-w-md" showCloseButton={true}>
           <DialogHeader>
@@ -397,8 +448,15 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
         projectId={currentProjectId}
         initialSpec={currentProjectSpec}
         onSpecSaved={({ projectId, spec }) => {
-          setCurrentProjectId((prev) => prev ?? projectId);
+          const id = String(projectId);
+          setCurrentProjectId((prev) => prev ?? id);
           setCurrentProjectSpec(spec);
+          lastSavedSignatureRef.current = latestSignatureRef.current;
+          setProjectsList((prev) =>
+            prev.some((p) => String(p.id) === id)
+              ? prev
+              : [{ id, name: "Без названия", updated_at: new Date().toISOString() }, ...prev],
+          );
         }}
       />
     </Puck>

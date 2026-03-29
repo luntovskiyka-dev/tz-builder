@@ -42,7 +42,7 @@ describe("inspector schema engine", () => {
   it("returns correct append items for list field types", () => {
     expect(getListAppendItem("string-list")).toBe("");
     expect(getListAppendItem("button-list")).toEqual({ text: "", url: "" });
-    expect(getListAppendItem("stats-list")).toEqual({ value: "", label: "" });
+    expect(getListAppendItem("stats-list")).toEqual({ title: "", description: "" });
   });
 });
 
