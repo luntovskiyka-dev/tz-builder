@@ -50,7 +50,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
-            <MessageSquare className="h-4 w-4 text-gray-500" />
+            <MessageSquare className="h-4 w-4 text-muted-foreground" />
             Обратная связь
           </DialogTitle>
         </DialogHeader>
@@ -58,10 +58,10 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
         {success ? (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
             <CheckCircle className="h-10 w-10 text-green-500" />
-            <p className="text-sm font-medium text-gray-800">
+            <p className="text-sm font-medium text-foreground">
               Спасибо за отзыв!
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               Мы постараемся учесть ваши пожелания.
             </p>
             <Button
@@ -75,7 +75,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               Расскажите, что можно улучшить, что нравится или что мешает работе.
             </p>
             <Textarea

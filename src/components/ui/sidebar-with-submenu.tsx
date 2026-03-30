@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ChevronDown,
   CircleHelp,
@@ -135,7 +136,14 @@ export default function SidebarWithSubmenu({
         <div className="flex h-full flex-col px-4">
           <div className="flex h-20 items-center pl-2">
             <div className="flex w-full items-center gap-4">
-              <img src={avatarUrl} className="size-10 rounded-full object-cover" alt="User avatar" />
+              <Image
+                src={avatarUrl}
+                className="size-10 rounded-full object-cover"
+                alt="User avatar"
+                width={40}
+                height={40}
+                unoptimized
+              />
               <div>
                 <span className="block text-sm font-semibold text-foreground">{userName}</span>
                 <span className="block text-xs text-muted-foreground">{userPlan}</span>

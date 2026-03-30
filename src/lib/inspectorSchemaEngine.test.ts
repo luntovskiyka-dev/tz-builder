@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { InspectorFieldDefinition } from "@/lib/blockTypes";
 import { getBlockInspectorSchema } from "@/lib/puckBlocks";
 import {
   applyVariantPresets,
@@ -8,19 +9,22 @@ import {
 
 describe("inspector schema engine", () => {
   it("respects visibleWhen for conditional fields", () => {
-    const schema = getBlockInspectorSchema("columns");
-    const titleField = schema?.fields.find((f) => f.key === "column3Title");
-    expect(titleField).toBeTruthy();
-    expect(isFieldVisible(titleField!, { variant: "3" })).toBe(true);
-    expect(isFieldVisible(titleField!, { variant: "2" })).toBe(false);
+    const schema = getBlockInspectorSchema("hero");
+    const imageField = schema?.fields.find((f) => f.key === "image");
+    expect(imageField).toBeTruthy();
+    expect(isFieldVisible(imageField!, { align: "left" })).toBe(true);
+    expect(isFieldVisible(imageField!, { align: "center" })).toBe(false);
   });
 
   it("respects visibilityKey hide/show toggles", () => {
-    const schema = getBlockInspectorSchema("heading");
-    const titleField = schema?.fields.find((f) => f.key === "text");
-    expect(titleField).toBeTruthy();
-    expect(isFieldVisible(titleField!, { showText: true })).toBe(true);
-    expect(isFieldVisible(titleField!, { showText: false })).toBe(false);
+    const field: InspectorFieldDefinition = {
+      key: "text",
+      label: "Text",
+      type: "textarea",
+      visibilityKey: "showText",
+    };
+    expect(isFieldVisible(field, { showText: true })).toBe(true);
+    expect(isFieldVisible(field, { showText: false })).toBe(false);
   });
 
   it("applies form variant presets", () => {

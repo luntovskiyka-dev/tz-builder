@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Puck, type Data } from "@puckeditor/core";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Puck, usePuck, type Data, type Plugin, type UiState } from "@puckeditor/core";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -28,10 +28,44 @@ import {
   puckOverrides,
 } from "@/lib/puckEditor";
 import { LeftSidebar } from "@/components/dashboard/LeftSidebar";
-import type { SavedStatus } from "@/components/dashboard/useCloudProjectSave";
-import { ProfileMenuContent } from "@/components/dashboard/ProfileMenuContent";
+import {
+  setEditorProjectsLoading,
+  setEditorSaveStatus,
+} from "@/lib/editorChromeStore";
 import { FeedbackModal } from "@/components/FeedbackModal";
 import { ExportModal } from "@/components/export/ExportModal";
+import { Button } from "@/components/ui/button";
+
+/**
+ * Hide Puck’s Blocks/Outline side nav (`Puck--hidePlugins`) and the built-in left drawer;
+ * blocks live in {@link LeftSidebar} via `<Puck.Components />`.
+ */
+const PUCK_DASHBOARD_UI: Partial<UiState> = { leftSideBarVisible: false };
+
+/** Registers `legacy-side-bar` so Puck collapses the vertical Blocks/Outline rail without rendering duplicate library UI. */
+const PUCK_HIDE_SIDE_NAV_PLUGINS: Plugin[] = [
+  { name: "legacy-side-bar", render: () => <></> },
+];
+
+/** Marks the editor when no block is selected so CSS can hide the inspector title row (“Page”). */
+function PuckSelectionShell({ children }: { children: React.ReactNode }) {
+  const { selectedItem } = usePuck();
+  return (
+    <div
+      id="main-editor"
+      tabIndex={-1}
+      className="min-h-0 min-w-0 flex-1 outline-none"
+      data-tz-puck-no-selection={selectedItem == null ? true : undefined}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** Hide Puck header row in dashboard editor. */
+function DashboardPuckHeader() {
+  return <></>;
+}
 
 type DashboardLayoutUser = {
   name?: string | null;
@@ -43,12 +77,10 @@ type DashboardLayoutUser = {
 export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
   const [canvasBlocks, setCanvasBlocks] = useState<CanvasBlock[]>([]);
   const [puckData, setPuckData] = useState<Partial<Data>>({ content: [], root: { props: { title: "" } } });
+  const [isInitialHydrationDone, setIsInitialHydrationDone] = useState(false);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [currentProjectSpec, setCurrentProjectSpec] = useState<string | null>(null);
   const [projectsList, setProjectsList] = useState<ProjectListItem[]>([]);
-  const [projectsLoading, setProjectsLoading] = useState(true);
-  const [cloudSaveStatus, setCloudSaveStatus] = useState<SavedStatus>("saved");
-  const [projectsMenuOpen, setProjectsMenuOpen] = useState(true);
   const [projectNameDialogOpen, setProjectNameDialogOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -57,9 +89,7 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
   /** Puck keeps only the first `data` it sees; bump key when hydrating from API so the editor remounts. */
   const [puckHydrationKey, setPuckHydrationKey] = useState(0);
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(false);
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const logoutFormRef = useRef<HTMLFormElement>(null);
-  const profileMenuRef = useRef<HTMLDivElement>(null);
   const localSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autosaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveInFlightRef = useRef(false);
@@ -105,21 +135,14 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
         }
       })
       .finally(() => {
-        if (!cancelled) setProjectsLoading(false);
+        if (!cancelled) {
+          setEditorProjectsLoading(false);
+          setIsInitialHydrationDone(true);
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  useEffect(() => {
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
-        setIsProfileMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
   const projectNameForSave = useCallback(() => {
@@ -140,7 +163,7 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
     }
 
     saveInFlightRef.current = true;
-    setCloudSaveStatus("saving");
+    setEditorSaveStatus("saving");
     try {
       const formData = new FormData();
       formData.set("name", projectNameForSave());
@@ -148,19 +171,14 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
       formData.set("projectId", String(currentProjectId));
       const result = await saveProjectAction(null, formData);
       if (result.error) {
-        setCloudSaveStatus("error");
+        setEditorSaveStatus("error");
         setDeleteError(result.error);
       } else {
         lastSavedSignatureRef.current = signature;
-        setCloudSaveStatus("saved");
+        setEditorSaveStatus("saved");
         setDeleteError(null);
-        setProjectsList((prev) =>
-          prev.map((p) =>
-            String(p.id) === String(currentProjectId)
-              ? { ...p, updated_at: new Date().toISOString() }
-              : p,
-          ),
-        );
+        // Intentionally do not update projectsList here: it would change profileMenuContent,
+        // invalidate Puck overrides, and flash the canvas on every autosave.
       }
     } finally {
       saveInFlightRef.current = false;
@@ -184,10 +202,10 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
       clearTimeout(autosaveTimeoutRef.current);
       autosaveTimeoutRef.current = null;
     }
-    setProjectsLoading(true);
+    setEditorProjectsLoading(true);
     setDeleteError(null);
     const result = await loadProjectAction(projectId);
-    setProjectsLoading(false);
+    setEditorProjectsLoading(false);
     if (result.error) return;
     if (result.blocks != null && Array.isArray(result.blocks)) {
       const loadedBlocks = result.blocks as CanvasBlock[];
@@ -199,8 +217,8 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
       lastSavedSignatureRef.current = signature;
       setCurrentProjectId(String(projectId));
       setCurrentProjectSpec(typeof result.spec === "string" ? result.spec : null);
-      setIsProfileMenuOpen(false);
-      setCloudSaveStatus("saved");
+      setIsLeftSidebarOpen(false);
+      setEditorSaveStatus("saved");
       setPuckHydrationKey((k) => k + 1);
     }
   }, []);
@@ -225,14 +243,14 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
     latestSignatureRef.current = "[]";
     lastSavedSignatureRef.current = "[]";
     setDeleteError(null);
-    setCloudSaveStatus("saving");
+    setEditorSaveStatus("saving");
 
     const formData = new FormData();
     formData.set("name", name);
     formData.set("blocks", JSON.stringify([]));
     const result = await saveProjectAction(null, formData);
     if (result.error || result.projectId == null) {
-      setCloudSaveStatus("error");
+      setEditorSaveStatus("error");
       setDeleteError(result.error ?? "Не удалось создать проект");
       return;
     }
@@ -242,26 +260,25 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
       { id, name, updated_at: new Date().toISOString() },
       ...prev.filter((p) => String(p.id) !== id),
     ]);
-    setCloudSaveStatus("saved");
+    setEditorSaveStatus("saved");
     setProjectNameDialogOpen(false);
-    setIsProfileMenuOpen(false);
   }, [newProjectName]);
 
   const handleSaveClick = useCallback(async () => {
-    setCloudSaveStatus("saving");
+    setEditorSaveStatus("saving");
     const formData = new FormData();
     formData.set("name", projectNameForSave());
     formData.set("blocks", JSON.stringify(latestBlocksRef.current));
     if (currentProjectId) formData.set("projectId", String(currentProjectId));
     const result = await saveProjectAction(null, formData);
     if (result.error || result.projectId == null) {
-      setCloudSaveStatus("error");
+      setEditorSaveStatus("error");
       setDeleteError(result.error ?? "Ошибка при сохранении проекта");
       return;
     }
     const savedId = String(result.projectId);
     lastSavedSignatureRef.current = latestSignatureRef.current;
-    setCloudSaveStatus("saved");
+    setEditorSaveStatus("saved");
     setDeleteError(null);
     if (!currentProjectId) {
       const name = projectNameForSave();
@@ -295,7 +312,7 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
     latestBlocksRef.current = [];
     latestSignatureRef.current = "[]";
     lastSavedSignatureRef.current = "[]";
-    setCloudSaveStatus("saved");
+    setEditorSaveStatus("saved");
     setPuckHydrationKey((k) => k + 1);
   }, [currentProjectId]);
 
@@ -317,27 +334,55 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
     logoutFormRef.current?.requestSubmit();
   }, [currentProjectId, projectNameForSave]);
 
-  const profileMenuContent = (
-    <ProfileMenuContent
-      userEmail={userEmail}
-      projectsMenuOpen={projectsMenuOpen}
-      setProjectsMenuOpen={setProjectsMenuOpen}
-      projectsLoading={projectsLoading}
-      projectsList={projectsList}
-      currentProjectId={currentProjectId}
-      handleSelectProject={handleSelectProject}
-      openNewProjectDialog={openNewProjectDialog}
-      handleSaveClick={handleSaveClick}
-      handleDeleteProject={handleDeleteProject}
-      deleteError={deleteError}
-      setFeedbackModalOpen={setFeedbackModalOpen}
-      logoutFormRef={logoutFormRef}
-      handleLogout={handleLogout}
-    />
-  );
   const handleExportClick = useCallback(() => {
     setExportModalOpen(true);
   }, []);
+
+  const dashboardOverrides = useMemo(
+    () => ({
+      ...puckOverrides,
+      header: () => <DashboardPuckHeader />,
+      puck: ({ children }: { children?: React.ReactNode }) => (
+        <div className="flex h-full min-h-0 w-full">
+          <LeftSidebar
+            isLeftSidebarOpen={isLeftSidebarOpen}
+            avatarUrl={avatarUrl}
+            userName={userName}
+            userEmail={userEmail}
+            projectsList={projectsList}
+            currentProjectId={currentProjectId}
+            handleSelectProject={handleSelectProject}
+            openNewProjectDialog={openNewProjectDialog}
+            handleSaveClick={handleSaveClick}
+            handleDeleteProject={handleDeleteProject}
+            deleteError={deleteError}
+            setFeedbackModalOpen={setFeedbackModalOpen}
+            logoutFormRef={logoutFormRef}
+            handleLogout={handleLogout}
+            onExportClick={handleExportClick}
+            blockLibrary={<Puck.Components />}
+          />
+          <PuckSelectionShell>{children}</PuckSelectionShell>
+        </div>
+      ),
+    }),
+    [
+      avatarUrl,
+      currentProjectId,
+      deleteError,
+      handleDeleteProject,
+      handleLogout,
+      handleExportClick,
+      handleSaveClick,
+      handleSelectProject,
+      isLeftSidebarOpen,
+      openNewProjectDialog,
+      projectsList,
+      projectNameForSave,
+      userEmail,
+      userName,
+    ],
+  );
 
   const handlePuckChange = useCallback((data: Data) => {
     const normalized = normalizePuckData(data);
@@ -363,14 +408,70 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
   }, []);
 
   return (
-    <Puck
-      key={puckHydrationKey}
-      config={puckConfig}
-      data={puckData}
-      onChange={handlePuckChange}
-      overrides={puckOverrides}
-      iframe={{ enabled: false }}
-    >
+    <>
+      <div className="flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-background">
+        <a
+          href="#main-editor"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:border focus:border-border focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:text-foreground focus:shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          К редактору
+        </a>
+        <button
+          type="button"
+          onClick={() => setIsLeftSidebarOpen((v) => !v)}
+          className="fixed left-4 top-4 z-50 rounded-md border border-border bg-background p-2 text-foreground shadow-sm md:hidden"
+          aria-label="Toggle sidebar"
+          aria-expanded={isLeftSidebarOpen}
+        >
+          {isLeftSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
+
+        {isLeftSidebarOpen && (
+          <div
+            role="presentation"
+            aria-hidden="true"
+            className="fixed inset-0 z-[35] bg-background/80 md:hidden"
+            onClick={() => setIsLeftSidebarOpen(false)}
+          />
+        )}
+
+        {isInitialHydrationDone ? (
+          <Puck
+            key={puckHydrationKey}
+            config={puckConfig}
+            data={puckData}
+            onChange={handlePuckChange}
+            overrides={dashboardOverrides}
+            ui={PUCK_DASHBOARD_UI}
+            plugins={PUCK_HIDE_SIDE_NAV_PLUGINS}
+            height="100%"
+            headerTitle={projectNameForSave()}
+          />
+        ) : (
+          <div className="h-full w-full bg-background" aria-hidden="true">
+            <div className="mx-auto flex h-full w-full max-w-6xl items-stretch gap-5 px-6 py-6">
+              <div className="hidden w-72 shrink-0 md:block">
+                <div className="h-full rounded-xl border border-border/60 bg-muted/[0.12] p-4">
+                  <div className="mb-5 h-5 w-24 animate-pulse rounded bg-muted/50" />
+                  <div className="space-y-2.5">
+                    <div className="h-9 w-full animate-pulse rounded-md bg-muted/45" />
+                    <div className="h-9 w-full animate-pulse rounded-md bg-muted/45" />
+                    <div className="h-9 w-5/6 animate-pulse rounded-md bg-muted/45" />
+                  </div>
+                </div>
+              </div>
+              <div className="min-w-0 flex-1 rounded-xl border border-border/60 bg-background p-6">
+                <div className="space-y-3.5">
+                  <div className="h-7 w-44 animate-pulse rounded-md bg-muted/45" />
+                  <div className="h-24 w-full animate-pulse rounded-lg bg-muted/40" />
+                  <div className="h-14 w-3/4 animate-pulse rounded-lg bg-muted/40" />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       <Dialog open={projectNameDialogOpen} onOpenChange={setProjectNameDialogOpen}>
         <DialogContent className="sm:max-w-md" showCloseButton={true}>
           <DialogHeader>
@@ -387,59 +488,16 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
             />
           </div>
           <DialogFooter>
-            <button
-              type="button"
-              onClick={() => setProjectNameDialogOpen(false)}
-              className="border border-border rounded-lg px-4 py-2 text-sm"
-            >
+            <Button type="button" variant="outline" onClick={() => setProjectNameDialogOpen(false)}>
               Отмена
-            </button>
-            <button
-              type="button"
-              onClick={handleCreateNewProject}
-              className="bg-primary text-primary-foreground rounded-lg px-4 py-2 text-sm font-medium"
-            >
+            </Button>
+            <Button type="button" onClick={handleCreateNewProject}>
               Создать
-            </button>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <div className="flex min-h-screen bg-background">
-        <button
-          type="button"
-          onClick={() => setIsLeftSidebarOpen((v) => !v)}
-          className="fixed left-4 top-4 z-50 rounded-md border border-border bg-background p-2 text-foreground shadow-sm md:hidden"
-          aria-label="Toggle sidebar"
-          aria-expanded={isLeftSidebarOpen}
-        >
-          {isLeftSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
-
-        <LeftSidebar
-          isLeftSidebarOpen={isLeftSidebarOpen}
-          profileMenuRef={profileMenuRef}
-          avatarUrl={avatarUrl}
-          userName={userName}
-          cloudSaveStatus={cloudSaveStatus}
-          isProfileMenuOpen={isProfileMenuOpen}
-          setIsProfileMenuOpen={setIsProfileMenuOpen}
-          profileMenuContent={profileMenuContent}
-          onExportClick={handleExportClick}
-          projectsLoading={projectsLoading}
-          blockLibrary={<Puck.Components />}
-        />
-
-        <main className="flex-1 bg-muted/30 overflow-y-auto p-8">
-          <div className="mx-auto min-h-screen max-w-[900px] bg-background shadow-sm">
-            <Puck.Preview />
-          </div>
-        </main>
-
-        <aside className="hidden w-[300px] border-l border-border/70 bg-background/80 p-4 md:block md:h-screen md:overflow-y-auto">
-          <Puck.Fields />
-        </aside>
-      </div>
       <FeedbackModal isOpen={feedbackModalOpen} onClose={() => setFeedbackModalOpen(false)} />
       <ExportModal
         blocks={canvasBlocks}
@@ -459,7 +517,7 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
           );
         }}
       />
-    </Puck>
+    </>
   );
 }
 

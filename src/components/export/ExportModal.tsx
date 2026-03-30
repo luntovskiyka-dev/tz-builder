@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { type Block } from "@/lib/export/textExport";
 import { saveProjectAction, saveProjectSpecAction } from "@/lib/actions/projects";
@@ -270,7 +271,9 @@ export function ExportModal({
     setProgressPercent(0);
     setEtaSeconds(null);
     setCopied(false);
-  }, [isOpen, initialSpec]); // run on open/selection change only
+    // Intentionally omit aiSpec / isGenerating: only hydrate from saved spec when opening or switching project.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync with [isOpen, initialSpec] only
+  }, [isOpen, initialSpec]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -308,13 +311,13 @@ export function ExportModal({
         showCloseButton={true}
       >
         {/* Header */}
-        <DialogHeader className="flex-row items-center justify-between gap-4 border-b border-gray-200 px-5 py-4 pr-12">
+        <DialogHeader className="flex-row items-center justify-between gap-4 border-b border-border px-5 py-4 pr-12">
           <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-gray-500 shrink-0" />
+            <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
             <DialogTitle className="text-base font-semibold">
               Генерация ТЗ с AI
             </DialogTitle>
-            <span className="text-[11px] text-gray-400 font-normal">
+            <span className="text-[11px] font-normal text-muted-foreground">
               {blocks.length} {pluralBlocks(blocks.length)}
             </span>
           </div>
@@ -322,11 +325,11 @@ export function ExportModal({
 
         {/* AI Generate button */}
         <div className="px-5 pt-4 space-y-3">
-          <button
+          <Button
             type="button"
             onClick={handleGenerateAI}
             disabled={generateDisabled}
-            className="w-full bg-[#0A0A0A] text-white rounded-lg py-2.5 px-4 text-sm font-medium hover:bg-[#0A0A0A]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full"
           >
             {isGenerating ? (
               <>
@@ -339,10 +342,10 @@ export function ExportModal({
                 Сгенерировать ТЗ с AI
               </>
             )}
-          </button>
+          </Button>
 
           {quota && quota.authenticated && (
-            <p className="text-[11px] text-center text-gray-500">
+            <p className="text-center text-[11px] text-muted-foreground">
               {quota.remaining > 0
                 ? `Осталось ${quota.remaining} из ${quota.limit} генераций сегодня (UTC)`
                 : `Лимит исчерпан: ${quota.limit} генерации в сутки (UTC). Попробуйте завтра.`}
@@ -351,7 +354,7 @@ export function ExportModal({
 
           {isGenerating && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>
                   {STAGES.find((s) => s.key === stage)?.label ?? "Обработка..."}
                 </span>
@@ -364,7 +367,7 @@ export function ExportModal({
           )}
 
           {isGenerating && specSaveStatus === "saving" && (
-            <p className="text-[11px] text-gray-500 text-center">
+            <p className="text-center text-[11px] text-muted-foreground">
               Сохраняю ТЗ в проект...
             </p>
           )}
@@ -374,8 +377,8 @@ export function ExportModal({
         <div className="flex-1 overflow-y-auto min-h-0 px-5 py-4">
           {isGenerating && !aiSpec && (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-              <p className="text-sm text-gray-500 text-center">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <p className="text-center text-sm text-muted-foreground">
                 AI составляет техническое задание...
                 <br />
                 Текст появится по мере генерации
@@ -384,13 +387,13 @@ export function ExportModal({
           )}
           {isGenerating && aiSpec && (
             <div className="flex flex-col gap-3">
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Текст генерируется в реальном времени...
               </p>
               <textarea
                 readOnly
                 value={aiSpec}
-                className="w-full h-64 p-3 text-xs font-mono bg-[#F9F9F9] border border-[#E5E5E5] rounded-lg resize-none focus:outline-none text-[#0A0A0A] leading-relaxed"
+                className="h-64 w-full resize-none rounded-lg border border-border bg-muted p-3 font-mono text-xs leading-relaxed text-foreground focus:outline-none"
               />
             </div>
           )}
@@ -405,15 +408,15 @@ export function ExportModal({
               <textarea
                 readOnly
                 value={aiSpec}
-                className="w-full h-64 p-3 text-xs font-mono bg-[#F9F9F9] border border-[#E5E5E5] rounded-lg resize-none focus:outline-none text-[#0A0A0A] leading-relaxed"
+                className="h-64 w-full resize-none rounded-lg border border-border bg-muted p-3 font-mono text-xs leading-relaxed text-foreground focus:outline-none"
               />
               <button
                 type="button"
                 onClick={handleCopyAI}
                 className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors w-fit ${
                   copied
-                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                    : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 shadow-sm"
+                    ? "border border-border bg-muted text-emerald-600"
+                    : "border border-border bg-background text-foreground hover:bg-muted shadow-sm"
                 }`}
               >
                 {copied ? (
@@ -431,7 +434,7 @@ export function ExportModal({
             </div>
           )}
           {!isGenerating && !aiError && !aiSpec && (
-            <p className="text-sm text-gray-500 py-8">
+            <p className="py-8 text-sm text-muted-foreground">
               Нажмите «Сгенерировать ТЗ с AI» чтобы создать подробное ТЗ
             </p>
           )}

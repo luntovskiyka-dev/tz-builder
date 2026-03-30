@@ -2,8 +2,20 @@ import { describe, expect, it } from "vitest";
 import { canvasBlocksToPuckData, normalizePuckData, puckDataToCanvasBlocks } from "@/lib/puckEditor";
 import type { CanvasBlock } from "@/lib/blockTypes";
 
+type PuckNormalizeInput = Parameters<typeof normalizePuckData>[0];
+
+/** Legacy / partial snapshots in tests are not full `Data`; narrow at the call site. */
+function puckFixture(input: unknown): PuckNormalizeInput {
+  return input as PuckNormalizeInput;
+}
+
 function mapById(blocks: CanvasBlock[]): Record<string, CanvasBlock> {
   return Object.fromEntries(blocks.map((block) => [block.id, block]));
+}
+
+/** Clone serializable puck data (normalize is pure; clone avoids shared refs in idempotency checks). */
+function cloneData<T>(data: T): T {
+  return JSON.parse(JSON.stringify(data)) as T;
 }
 
 describe("puck editor round-trip", () => {
@@ -49,7 +61,7 @@ describe("puck editor round-trip", () => {
     if (gridNode) gridNode.props.numColumns = 3;
     if (headingNode) headingNode.props.text = "New heading";
 
-    const afterEditBlocks = puckDataToCanvasBlocks(normalizePuckData(data as any));
+    const afterEditBlocks = puckDataToCanvasBlocks(normalizePuckData(puckFixture(data)));
     const reloadedData = canvasBlocksToPuckData(afterEditBlocks);
     const afterReloadBlocks = puckDataToCanvasBlocks(reloadedData);
     const byId = mapById(afterReloadBlocks);
@@ -63,11 +75,11 @@ describe("puck editor round-trip", () => {
   });
 
   it("migrates flat layout keys into layout object for blocks with layout", () => {
-    const data = normalizePuckData({
+    const data = normalizePuckData(puckFixture({
       content: [],
       zones: {},
       root: { props: {} },
-    } as any);
+    }));
 
     const withLegacy = {
       ...data,
@@ -82,7 +94,7 @@ describe("puck editor round-trip", () => {
       },
     };
 
-    const normalized = normalizePuckData(withLegacy as any);
+    const normalized = normalizePuckData(puckFixture(withLegacy));
     const node = (normalized.zones as Record<string, unknown>)["grid-1:items"] as Array<{
       props: Record<string, unknown>;
     }>;
@@ -93,14 +105,14 @@ describe("puck editor round-trip", () => {
   });
 
   it("migrates legacy grid col-* zones into a single items zone", () => {
-    const normalized = normalizePuckData({
+    const normalized = normalizePuckData(puckFixture({
       content: [{ id: "grid-1", type: "grid", props: { numColumns: 2 } }],
       zones: {
         "grid-1:col-1": [{ id: "a", type: "text", props: { text: "A" } }],
         "grid-1:col-2": [{ id: "b", type: "text", props: { text: "B" } }],
       },
       root: { props: {} },
-    } as any);
+    }));
 
     const zones = normalized.zones as Record<string, unknown>;
     const items = zones["grid-1:items"] as Array<{ id?: string }>;
@@ -111,13 +123,13 @@ describe("puck editor round-trip", () => {
   });
 
   it("migrates template slot zone from content to children", () => {
-    const normalized = normalizePuckData({
+    const normalized = normalizePuckData(puckFixture({
       content: [{ id: "template-1", type: "template", props: { template: "blank" } }],
       zones: {
         "template-1:content": [{ id: "grid-1", type: "grid", props: { numColumns: 2 } }],
       },
       root: { props: {} },
-    } as any);
+    }));
 
     const zones = normalized.zones as Record<string, unknown>;
     expect(zones["template-1:content"]).toBeUndefined();
@@ -126,14 +138,14 @@ describe("puck editor round-trip", () => {
   });
 
   it("migrates heading level to h1–h6 and space direction both from legacy values", () => {
-    const normalized = normalizePuckData({
+    const normalized = normalizePuckData(puckFixture({
       content: [
         { id: "heading-legacy", type: "heading", props: { text: "T", level: "3" } },
         { id: "space-legacy", type: "space", props: { size: "32px", direction: "" } },
       ],
       zones: {},
       root: { props: {} },
-    } as any);
+    }));
 
     const heading = (normalized.content as Array<{ id?: string; props: Record<string, unknown> }>).find(
       (n) => n.id === "heading-legacy",
@@ -146,13 +158,13 @@ describe("puck editor round-trip", () => {
   });
 
   it("migrates legacy grid children zone into items", () => {
-    const normalized = normalizePuckData({
+    const normalized = normalizePuckData(puckFixture({
       content: [{ id: "grid-1", type: "grid", props: { numColumns: 2 } }],
       zones: {
         "grid-1:children": [{ id: "t1", type: "text", props: { text: "In legacy children zone" } }],
       },
       root: { props: {} },
-    } as any);
+    }));
 
     const zones = normalized.zones as Record<string, unknown>;
     expect(zones["grid-1:children"]).toBeUndefined();
@@ -162,7 +174,7 @@ describe("puck editor round-trip", () => {
   });
 
   it("migrates logos text/url to alt/imageUrl and round-trips to canvas blocks", () => {
-    const normalized = normalizePuckData({
+    const normalized = normalizePuckData(puckFixture({
       content: [
         {
           id: "logos-1",
@@ -177,7 +189,7 @@ describe("puck editor round-trip", () => {
       ],
       zones: {},
       root: { props: {} },
-    } as any);
+    }));
 
     const logosNode = (normalized.content as Array<{ props?: { logos?: unknown[] } }>)[0];
     expect(logosNode?.props?.logos).toEqual([
@@ -192,7 +204,7 @@ describe("puck editor round-trip", () => {
   });
 
   it("migrates stats value/label to title/description and round-trips to canvas blocks", () => {
-    const normalized = normalizePuckData({
+    const normalized = normalizePuckData(puckFixture({
       content: [
         {
           id: "stats-1",
@@ -207,7 +219,7 @@ describe("puck editor round-trip", () => {
       ],
       zones: {},
       root: { props: {} },
-    } as any);
+    }));
 
     const statsNode = (normalized.content as Array<{ props?: { items?: unknown[] } }>)[0];
     expect(statsNode?.props?.items).toEqual([
@@ -222,13 +234,13 @@ describe("puck editor round-trip", () => {
   });
 
   it("normalizes stat block type to stats in content and zones", () => {
-    const normalized = normalizePuckData({
+    const normalized = normalizePuckData(puckFixture({
       content: [{ id: "s1", type: "stat", props: { items: [{ value: "1", label: "A" }] } }],
       zones: {
         "grid-1:items": [{ id: "s2", type: "stat", props: { items: [] } }],
       },
       root: { props: {} },
-    } as any);
+    }));
 
     expect((normalized.content as { type: string }[])[0]?.type).toBe("stats");
     expect(((normalized.zones as Record<string, { type: string }[]>)[
@@ -237,23 +249,23 @@ describe("puck editor round-trip", () => {
   });
 
   it("preserves root title through normalizePuckData and defaults when absent", () => {
-    const withTitle = normalizePuckData({
+    const withTitle = normalizePuckData(puckFixture({
       content: [],
       zones: {},
       root: { props: { title: "Legacy project name" } },
-    } as any);
-    expect(withTitle.root.props.title).toBe("Legacy project name");
+    }));
+    expect(withTitle.root?.props?.title).toBe("Legacy project name");
 
-    const defaulted = normalizePuckData({
+    const defaulted = normalizePuckData(puckFixture({
       content: [],
       zones: {},
       root: { props: {} },
-    } as any);
-    expect(defaulted.root.props.title).toBe("");
+    }));
+    expect(defaulted.root?.props?.title).toBe("");
   });
 
   it("migrates template props content array to children for old saves", () => {
-    const normalized = normalizePuckData({
+    const normalized = normalizePuckData(puckFixture({
       content: [
         {
           id: "template-1",
@@ -263,7 +275,7 @@ describe("puck editor round-trip", () => {
       ],
       zones: {},
       root: { props: {} },
-    } as any);
+    }));
 
     const props = (normalized.content as Array<{ props?: Record<string, unknown> }>)[0]?.props;
     expect(props?.content).toBeUndefined();
@@ -271,7 +283,7 @@ describe("puck editor round-trip", () => {
   });
 
   it("normalizes a composite legacy project snapshot", () => {
-    const normalized = normalizePuckData({
+    const normalized = normalizePuckData(puckFixture({
       content: [{ id: "template-1", type: "template", props: { template: "blank" } }],
       zones: {
         "template-1:content": [{ id: "grid-1", type: "grid", props: { numColumns: 2 } }],
@@ -279,7 +291,7 @@ describe("puck editor round-trip", () => {
         "grid-1:col-2": [{ id: "stats-1", type: "stat", props: { items: [{ value: "10", label: "Ten" }] } }],
       },
       root: { props: { title: "Snapshot" } },
-    } as any);
+    }));
 
     const zones = normalized.zones as Record<string, unknown>;
     expect(zones["template-1:content"]).toBeUndefined();
@@ -292,12 +304,88 @@ describe("puck editor round-trip", () => {
     expect(logos?.props?.logos).toEqual([{ alt: "Logo", imageUrl: "https://x/y.png" }]);
     expect(stats?.type).toBe("stats");
     expect(stats?.props?.items).toEqual([{ title: "10", description: "Ten" }]);
-    expect(normalized.root.props.title).toBe("Snapshot");
+    expect(normalized.root?.props?.title).toBe("Snapshot");
 
     const blocks = puckDataToCanvasBlocks(normalized);
-    const again = normalizePuckData(canvasBlocksToPuckData(blocks) as any);
+    const again = normalizePuckData(puckFixture(canvasBlocksToPuckData(blocks)));
     const items2 = (again.zones as Record<string, unknown>)["grid-1:items"] as typeof items;
     expect(items2.find((n) => n.id === "logos-1")?.props?.logos).toEqual(logos?.props?.logos);
     expect(items2.find((n) => n.id === "stats-1")?.props?.items).toEqual(stats?.props?.items);
+  });
+});
+
+/**
+ * Phase 4 — automated coverage for normalizePuckData + round-trip.
+ *
+ * Manual QA (run dev server, editor): nested grid/flex/template slots survive save/reload; canvas
+ * column still flex-1 / min-h-0 with root header+footer; DropZones for `*:items` / `*:children` accept drops.
+ */
+describe("normalizePuckData idempotency and multi hop round-trip", () => {
+  it("applies normalizePuckData idempotently to canvas-originated puck data", () => {
+    const blocks: CanvasBlock[] = [
+      { id: "template-1", type: "template", props: { template: "blank" } },
+      { id: "grid-1", type: "grid", props: { numColumns: 2, __parentId: "template-1", __zone: "children" } },
+      {
+        id: "flex-1",
+        type: "flex",
+        props: { direction: "column", __parentId: "grid-1", __zone: "items" },
+      },
+      { id: "btn-1", type: "button", props: { label: "Nested", __parentId: "flex-1", __zone: "children" } },
+    ];
+    const fromCanvas = canvasBlocksToPuckData(blocks);
+    const once = normalizePuckData(cloneData(fromCanvas) as Parameters<typeof normalizePuckData>[0]);
+    const twice = normalizePuckData(cloneData(once));
+    expect(twice).toEqual(once);
+  });
+
+  it("preserves template → grid → flex → button zone paths across two canvas↔puck cycles", () => {
+    const initial: CanvasBlock[] = [
+      { id: "template-1", type: "template", props: { template: "blank" } },
+      { id: "grid-1", type: "grid", props: { numColumns: 2, __parentId: "template-1", __zone: "children" } },
+      {
+        id: "flex-1",
+        type: "flex",
+        props: { direction: "row", __parentId: "grid-1", __zone: "items" },
+      },
+      { id: "button-1", type: "button", props: { label: "CTA", __parentId: "flex-1", __zone: "children" } },
+    ];
+
+    let data = canvasBlocksToPuckData(initial);
+    let blocks = puckDataToCanvasBlocks(data);
+    data = normalizePuckData(canvasBlocksToPuckData(blocks) as Parameters<typeof normalizePuckData>[0]);
+    blocks = puckDataToCanvasBlocks(data);
+
+    const byId = mapById(blocks);
+    expect(Object.keys(byId).sort()).toEqual(["button-1", "flex-1", "grid-1", "template-1"]);
+    expect(byId["grid-1"]?.props.__parentId).toBe("template-1");
+    expect(byId["grid-1"]?.props.__zone).toBe("children");
+    expect(byId["flex-1"]?.props.__parentId).toBe("grid-1");
+    expect(byId["flex-1"]?.props.__zone).toBe("items");
+    expect(byId["button-1"]?.props.__parentId).toBe("flex-1");
+    expect(byId["button-1"]?.props.__zone).toBe("children");
+    expect(byId["button-1"]?.props.label).toBe("CTA");
+  });
+
+  it("keeps zone keys and node ids stable after normalize then puckDataToCanvasBlocks then normalize", () => {
+    const data = normalizePuckData(puckFixture({
+      content: [{ id: "template-1", type: "template", props: { template: "blank" } }],
+      zones: {
+        "template-1:children": [{ id: "g1", type: "grid", props: { numColumns: 1 } }],
+        "g1:items": [{ id: "inner", type: "heading", props: { text: "H" } }],
+      },
+      root: { props: { title: "T" } },
+    }));
+
+    expect(data.root?.props?.title).toBe("T");
+
+    const blocks = puckDataToCanvasBlocks(data);
+    const again = normalizePuckData(puckFixture(canvasBlocksToPuckData(blocks)));
+
+    // Project title is not part of CanvasBlock[]; reload from blocks resets root title to default.
+    expect(again.root?.props?.title).toBe("");
+    const zones = again.zones as Record<string, { id?: string }[]>;
+    expect(zones["template-1:children"]?.[0]?.id).toBe("g1");
+    expect(zones["g1:items"]?.[0]?.id).toBe("inner");
+    expect((again.content as { id?: string }[])[0]?.id).toBe("template-1");
   });
 });

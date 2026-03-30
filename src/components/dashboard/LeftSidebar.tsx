@@ -1,41 +1,84 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { ChevronDown } from "lucide-react";
-import type { SavedStatus } from "@/components/dashboard/useCloudProjectSave";
+import { useEditorProjectsLoading, useEditorSaveStatus } from "@/lib/editorChromeStore";
+import { ProfileMenuContent } from "@/components/dashboard/ProfileMenuContent";
+import { type ProjectListItem } from "@/lib/actions/projects";
+
+const PROFILE_MENU_PANEL_ID = "profile-menu-dropdown";
 
 type LeftSidebarProps = {
   isLeftSidebarOpen: boolean;
-  profileMenuRef: React.RefObject<HTMLDivElement | null>;
   avatarUrl: string;
   userName: string;
-  cloudSaveStatus: SavedStatus;
-  isProfileMenuOpen: boolean;
-  setIsProfileMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  profileMenuContent: React.ReactNode;
+  userEmail: string;
+  projectsList: ProjectListItem[];
+  currentProjectId: string | null;
+  handleSelectProject: (projectId: string) => void;
+  openNewProjectDialog: () => void;
+  handleSaveClick: () => void;
+  handleDeleteProject: () => void;
+  deleteError: string | null;
+  setFeedbackModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  logoutFormRef: React.RefObject<HTMLFormElement | null>;
+  handleLogout: () => void;
   onExportClick: () => void;
-  projectsLoading: boolean;
   blockLibrary: React.ReactNode;
 };
 
 export function LeftSidebar({
   isLeftSidebarOpen,
-  profileMenuRef,
   avatarUrl,
   userName,
-  cloudSaveStatus,
-  isProfileMenuOpen,
-  setIsProfileMenuOpen,
-  profileMenuContent,
+  userEmail,
+  projectsList,
+  currentProjectId,
+  handleSelectProject,
+  openNewProjectDialog,
+  handleSaveClick,
+  handleDeleteProject,
+  deleteError,
+  setFeedbackModalOpen,
+  logoutFormRef,
+  handleLogout,
   onExportClick,
-  projectsLoading,
   blockLibrary,
 }: LeftSidebarProps) {
+  const cloudSaveStatus = useEditorSaveStatus();
+  const projectsLoading = useEditorProjectsLoading();
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [projectsMenuOpen, setProjectsMenuOpen] = useState(false);
+  const [templatesMenuOpen, setTemplatesMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isProfileMenuOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsProfileMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isProfileMenuOpen, setIsProfileMenuOpen]);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest('[role="dialog"]') || target.closest('[data-slot="dialog-overlay"]')) return;
+      if (profileMenuRef.current && !profileMenuRef.current.contains(target)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
   return (
     <aside
-      className={`fixed left-0 top-0 z-40 flex h-screen w-[260px] transform flex-col overflow-y-auto border-r border-border/70 bg-background/80 p-4 backdrop-blur supports-[backdrop-filter]:bg-background/70 transition-transform duration-200 md:sticky md:translate-x-0 ${
-        isLeftSidebarOpen ? "translate-x-0" : "-translate-x-full"
+      className={`max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-40 flex h-full min-h-0 w-[260px] shrink-0 transform flex-col overflow-y-auto [scrollbar-gutter:stable] border-r border-border/70 bg-background/80 p-4 backdrop-blur supports-[backdrop-filter]:bg-background/70 transition-transform duration-200 md:relative md:translate-x-0 ${
+        isLeftSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       }`}
     >
       <div className="mb-3 border-b border-border/70 pb-3">
@@ -71,18 +114,52 @@ export function LeftSidebar({
               </span>
             </span>
           </div>
-          <div className="relative">
+          <div className="relative shrink-0">
             <button
               type="button"
+              id="profile-menu-button"
               onClick={() => setIsProfileMenuOpen((v) => !v)}
               className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              aria-haspopup="menu"
+              aria-label="Меню профиля"
+              aria-haspopup="true"
               aria-expanded={isProfileMenuOpen}
+              aria-controls={isProfileMenuOpen ? PROFILE_MENU_PANEL_ID : undefined}
             >
               <ChevronDown className={`h-4 w-4 transition-transform ${isProfileMenuOpen ? "rotate-180" : ""}`} />
             </button>
           </div>
-          {isProfileMenuOpen && profileMenuContent}
+          {isProfileMenuOpen && (
+            <div
+              id={PROFILE_MENU_PANEL_ID}
+              role="region"
+              aria-labelledby="profile-menu-button"
+              className="absolute left-2 right-2 top-full z-50 mt-1"
+            >
+              <ProfileMenuContent
+                userEmail={userEmail}
+                projectsMenuOpen={projectsMenuOpen}
+                setProjectsMenuOpen={setProjectsMenuOpen}
+                templatesMenuOpen={templatesMenuOpen}
+                setTemplatesMenuOpen={setTemplatesMenuOpen}
+                projectsList={projectsList}
+                currentProjectId={currentProjectId}
+                handleSelectProject={(projectId) => {
+                  handleSelectProject(projectId);
+                  setIsProfileMenuOpen(false);
+                }}
+                openNewProjectDialog={() => {
+                  openNewProjectDialog();
+                  setIsProfileMenuOpen(false);
+                }}
+                handleSaveClick={handleSaveClick}
+                handleDeleteProject={handleDeleteProject}
+                deleteError={deleteError}
+                setFeedbackModalOpen={setFeedbackModalOpen}
+                logoutFormRef={logoutFormRef}
+                handleLogout={handleLogout}
+              />
+            </div>
+          )}
         </div>
       </div>
       <div className="mb-3">

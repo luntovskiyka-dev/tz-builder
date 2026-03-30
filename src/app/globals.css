@@ -129,9 +129,28 @@
 [data-puck-entry] {
   height: 100%;
   min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 [data-puck-entry] [data-puck-dropzone][data-puck-root-dropzone] {
   min-height: 100% !important;
   height: 100%;
+  flex: 1 1 auto;
+  align-content: stretch;
+}
+
+/* Puck: no block selected → hide right inspector heading (“Page”) and breadcrumbs */
+[data-tz-puck-no-selection="true"] [class*="SidebarSection-title"] {
+  display: none;
+}
+
+/* Puck: no block selected -> suppress transient inspector loading spinner */
+[data-tz-puck-no-selection="true"] [class*="PuckFields-loadingOverlay"] {
+  display: none !important;
+}
+
+/* Puck right inspector: hide hierarchy trail (кнопка «Page» и chevron) при настройке блоков */
+#main-editor [class*="Sidebar--right"] [class*="SidebarSection-breadcrumbs"] > div:first-of-type:not([class*="SidebarSection-heading"]) {
+  display: none !important;
 }

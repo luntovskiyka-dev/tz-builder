@@ -2,8 +2,18 @@ import type {
   BlockInspectorSchema,
   CanvasBlock,
   InspectorFieldDefinition,
+  InspectorFieldOption,
 } from "@/lib/blockTypes";
 import { CARD_LUCIDE_ICON_OPTIONS, DEFAULT_CARD_ICON } from "@/lib/cardLucideIcons";
+
+/** Same steps as Puck demo `spacingOptions` + 0px — Vertical Padding on Grid layout ([demo](https://demo.puckeditor.com/edit)). */
+export const GRID_LAYOUT_VERTICAL_PADDING_OPTIONS: InspectorFieldOption[] = [
+  { label: "0px", value: "0px" },
+  ...[8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128, 136, 144, 152, 160].map((n) => ({
+    label: `${n}px`,
+    value: `${n}px`,
+  })),
+];
 
 type PuckComponentConfig = {
   label: string;
@@ -47,6 +57,7 @@ const PUCK_COMPONENTS: Record<string, PuckComponentConfig> = {
     defaultProps: {
       numColumns: 4,
       gap: 24,
+      layout: { padding: "0px" },
     },
     fields: [
       {
@@ -55,6 +66,19 @@ const PUCK_COMPONENTS: Record<string, PuckComponentConfig> = {
         type: "number",
       },
       { key: "gap", label: "Gap", type: "number" },
+      {
+        key: "layout",
+        label: "Layout",
+        type: "object",
+        objectFields: [
+          {
+            key: "padding",
+            label: "Vertical Padding",
+            type: "select",
+            options: GRID_LAYOUT_VERTICAL_PADDING_OPTIONS,
+          },
+        ],
+      },
     ],
     render: (props) => String(props.numColumns ?? 4),
   },
@@ -65,6 +89,7 @@ const PUCK_COMPONENTS: Record<string, PuckComponentConfig> = {
       direction: "row",
       gap: 24,
       wrap: "wrap",
+      layout: { padding: "0px" },
     },
     fields: [
       {
@@ -94,6 +119,19 @@ const PUCK_COMPONENTS: Record<string, PuckComponentConfig> = {
         options: [
           { value: "wrap", label: "true" },
           { value: "nowrap", label: "false" },
+        ],
+      },
+      {
+        key: "layout",
+        label: "Layout",
+        type: "object",
+        objectFields: [
+          {
+            key: "padding",
+            label: "Vertical Padding",
+            type: "select",
+            options: GRID_LAYOUT_VERTICAL_PADDING_OPTIONS,
+          },
         ],
       },
     ],
@@ -195,7 +233,19 @@ const PUCK_COMPONENTS: Record<string, PuckComponentConfig> = {
           { value: "right", label: "Right" },
         ],
       },
-      layoutField,
+      {
+        key: "layout",
+        label: "Layout",
+        type: "object",
+        objectFields: [
+          {
+            key: "padding",
+            label: "Vertical Padding",
+            type: "select",
+            options: GRID_LAYOUT_VERTICAL_PADDING_OPTIONS,
+          },
+        ],
+      },
     ],
     render: (props) => String(props.text ?? ""),
   },
@@ -243,7 +293,19 @@ const PUCK_COMPONENTS: Record<string, PuckComponentConfig> = {
         ],
       },
       { key: "maxWidth", label: "Max Width", type: "text", placeholder: "800px" },
-      layoutField,
+      {
+        key: "layout",
+        label: "Layout",
+        type: "object",
+        objectFields: [
+          {
+            key: "padding",
+            label: "Vertical Padding",
+            type: "select",
+            options: GRID_LAYOUT_VERTICAL_PADDING_OPTIONS,
+          },
+        ],
+      },
     ],
     render: (props) => String(props.text ?? ""),
   },
@@ -253,7 +315,22 @@ const PUCK_COMPONENTS: Record<string, PuckComponentConfig> = {
       richtext: "<h2>Heading</h2><p>Body</p>",
       layout: {},
     },
-    fields: [{ key: "richtext", label: "Rich text", type: "richtext" }, layoutField],
+    fields: [
+      { key: "richtext", label: "Rich text", type: "richtext" },
+      {
+        key: "layout",
+        label: "Layout",
+        type: "object",
+        objectFields: [
+          {
+            key: "padding",
+            label: "Vertical Padding",
+            type: "select",
+            options: GRID_LAYOUT_VERTICAL_PADDING_OPTIONS,
+          },
+        ],
+      },
+    ],
     render: (props) => String(props.richtext ?? ""),
   },
   button: {
@@ -265,7 +342,7 @@ const PUCK_COMPONENTS: Record<string, PuckComponentConfig> = {
     },
     fields: [
       { key: "label", label: "Label", type: "text" },
-      { key: "href", label: "Href", type: "text", placeholder: "#" },
+      { key: "href", label: "Link", type: "text", placeholder: "#" },
       {
         key: "variant",
         label: "Variant",
@@ -305,7 +382,19 @@ const PUCK_COMPONENTS: Record<string, PuckComponentConfig> = {
           { value: "flat", label: "flat" },
         ],
       },
-      layoutField,
+      {
+        key: "layout",
+        label: "Layout",
+        type: "object",
+        objectFields: [
+          {
+            key: "padding",
+            label: "Vertical Padding",
+            type: "select",
+            options: GRID_LAYOUT_VERTICAL_PADDING_OPTIONS,
+          },
+        ],
+      },
     ],
     render: (props) => String(props.title ?? ""),
   },
@@ -381,7 +470,7 @@ const PUCK_COMPONENTS: Record<string, PuckComponentConfig> = {
       ],
     },
     fields: [{ key: "logos", label: "Logos", type: "logos-list" }],
-    render: (_props) => "Logos",
+    render: () => "Logos",
   },
   stats: {
     label: "Stats",
@@ -411,10 +500,21 @@ const PUCK_COMPONENTS: Record<string, PuckComponentConfig> = {
           { label: "Blank", value: "blank" },
           { label: "Example 1", value: "example_1" },
           { label: "Example 2", value: "example_2" },
-          { label: "Save current as new template", value: "__save_new__" },
         ],
       },
-      layoutField,
+      {
+        key: "layout",
+        label: "Layout",
+        type: "object",
+        objectFields: [
+          {
+            key: "padding",
+            label: "Vertical Padding",
+            type: "select",
+            options: GRID_LAYOUT_VERTICAL_PADDING_OPTIONS,
+          },
+        ],
+      },
     ],
     render: (props) => String(props.template ?? ""),
   },
@@ -450,10 +550,8 @@ const PUCK_COMPONENTS: Record<string, PuckComponentConfig> = {
           { value: "sticky", label: "Sticky" },
         ],
       },
-      { key: "backgroundColor", label: "Background", type: "text", placeholder: "#fff" },
-      { key: "textColor", label: "Text color", type: "text", placeholder: "#111" },
       { key: "ctaLabel", label: "CTA label", type: "text" },
-      { key: "ctaHref", label: "CTA href", type: "text" },
+      { key: "ctaHref", label: "CTA link", type: "text" },
       {
         key: "alignNav",
         label: "Align nav",
@@ -486,8 +584,6 @@ const PUCK_COMPONENTS: Record<string, PuckComponentConfig> = {
     fields: [
       { key: "columns", label: "Columns", type: "stats-list" },
       { key: "copyright", label: "Copyright", type: "text" },
-      { key: "backgroundColor", label: "Background", type: "text" },
-      { key: "textColor", label: "Text color", type: "text" },
       {
         key: "paddingY",
         label: "Vertical padding",
@@ -513,6 +609,14 @@ const PUCK_COMPONENTS: Record<string, PuckComponentConfig> = {
 };
 
 export const BLOCK_CATEGORIES = [
+  {
+    id: "chrome",
+    label: "Chrome",
+    blocks: [
+      { id: "header", label: "Header", defaultProps: PUCK_COMPONENTS.header.defaultProps },
+      { id: "footer", label: "Footer", defaultProps: PUCK_COMPONENTS.footer.defaultProps },
+    ],
+  },
   {
     id: "layout",
     label: "Layout",
@@ -545,14 +649,6 @@ export const BLOCK_CATEGORIES = [
       { id: "logos", label: "Logos", defaultProps: PUCK_COMPONENTS.logos.defaultProps },
       { id: "stats", label: "Stats", defaultProps: PUCK_COMPONENTS.stats.defaultProps },
       { id: "template", label: "Template", defaultProps: PUCK_COMPONENTS.template.defaultProps },
-    ],
-  },
-  {
-    id: "chrome",
-    label: "Chrome",
-    blocks: [
-      { id: "header", label: "Header", defaultProps: PUCK_COMPONENTS.header.defaultProps },
-      { id: "footer", label: "Footer", defaultProps: PUCK_COMPONENTS.footer.defaultProps },
     ],
   },
 ] as const;

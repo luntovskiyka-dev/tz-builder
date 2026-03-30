@@ -72,11 +72,10 @@ export function puckDataToCanvasBlocks(data: Partial<Data>): CanvasBlock[] {
             : typeof rawProps.__canvasId === "string"
               ? (rawProps.__canvasId as string)
               : `${type}-${index}`;
-        const { __canvasId, ...propsWithoutMeta } = rawProps;
-        const { __parentId, __zone, ...propsClean } = propsWithoutMeta as Record<string, unknown>;
-        void __canvasId;
-        void __parentId;
-        void __zone;
+        const propsClean = { ...(rawProps as Record<string, unknown>) };
+        delete propsClean.__canvasId;
+        delete propsClean.__parentId;
+        delete propsClean.__zone;
 
         const blockProps = convertPropsFromPuck(type, propsClean);
         if (parentId) {
