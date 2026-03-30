@@ -217,27 +217,30 @@ export function renderCardBlock(props: Record<string, unknown>): ReactNode {
   const iconName = asString(props.icon, DEFAULT_CARD_ICON);
   const mode = asString(props.mode, "flat");
   const isCard = mode === "card";
+  const iconClass = isCard
+    ? "h-7 w-7 shrink-0 text-primary"
+    : "h-7 w-7 shrink-0 text-muted-foreground";
   return (
     <div
-      className={`rounded-2xl p-6 ${
+      className={`flex h-full min-h-0 flex-col items-center text-center ${
         isCard
-          ? "border border-border bg-card text-card-foreground shadow-sm"
-          : "border border-transparent bg-muted/30"
+          ? "rounded-2xl border border-border/70 bg-card p-6 shadow-sm ring-1 ring-black/[0.04] transition-[box-shadow,transform] duration-200 hover:shadow-md hover:ring-black/[0.06] dark:ring-white/[0.06] dark:hover:ring-white/10"
+          : "rounded-2xl border border-border/50 bg-muted/30 p-6 ring-1 ring-border/30"
       }`}
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
-        <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
-            isCard ? "bg-muted" : "bg-background/80"
-          }`}
-        >
-          <CardLucidePreview name={iconName} className="h-6 w-6 shrink-0 text-muted-foreground" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-lg font-semibold tracking-tight text-foreground">{title}</h3>
-          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p>
-        </div>
+      <div
+        className={`mb-5 flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center rounded-full ${
+          isCard
+            ? "bg-gradient-to-br from-primary/25 via-primary/10 to-muted/80 shadow-inner"
+            : "bg-background/90 ring-1 ring-border/60"
+        }`}
+      >
+        <CardLucidePreview name={iconName} className={iconClass} />
       </div>
+      <h3 className="text-pretty text-base font-semibold leading-snug tracking-tight text-foreground sm:text-[1.05rem]">
+        {title}
+      </h3>
+      <p className="mt-3 flex-1 text-pretty text-sm leading-relaxed text-muted-foreground">{description}</p>
     </div>
   );
 }

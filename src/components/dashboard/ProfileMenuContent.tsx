@@ -14,6 +14,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import {
+  EVENT_CONFERENCE_TEMPLATE_PROJECT_NAME,
+  PORTFOLIO_SERVICES_TEMPLATE_PROJECT_NAME,
+  SAAS_TEMPLATE_PROJECT_NAME,
+} from "@/lib/saasTemplateMeta";
 
 type ProfileMenuContentProps = {
   userEmail: string;
@@ -25,12 +30,16 @@ type ProfileMenuContentProps = {
   currentProjectId: string | null;
   handleSelectProject: (projectId: string) => void;
   openNewProjectDialog: () => void;
+  openRenameProjectDialog: () => void;
   handleSaveClick: () => void;
   handleDeleteProject: () => void;
   deleteError: string | null;
   setFeedbackModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   logoutFormRef: React.RefObject<HTMLFormElement | null>;
   handleLogout: () => void;
+  onApplySaaSTemplate: () => void;
+  onApplyEventConferenceTemplate: () => void;
+  onApplyPortfolioServicesTemplate: () => void;
 };
 
 export function ProfileMenuContent({
@@ -43,12 +52,16 @@ export function ProfileMenuContent({
   currentProjectId,
   handleSelectProject,
   openNewProjectDialog,
+  openRenameProjectDialog,
   handleSaveClick,
   handleDeleteProject,
   deleteError,
   setFeedbackModalOpen,
   logoutFormRef,
   handleLogout,
+  onApplySaaSTemplate,
+  onApplyEventConferenceTemplate,
+  onApplyPortfolioServicesTemplate,
 }: ProfileMenuContentProps) {
   const projectsLoading = useEditorProjectsLoading();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
@@ -130,6 +143,14 @@ export function ProfileMenuContent({
                   </button>
                   <button
                     type="button"
+                    onClick={openRenameProjectDialog}
+                    disabled={!currentProjectId}
+                    className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Переименовать проект
+                  </button>
+                  <button
+                    type="button"
                     onClick={openDeleteConfirm}
                     disabled={!currentProjectId}
                     className="w-full rounded-md border border-destructive/40 bg-background px-3 py-1.5 text-xs text-destructive transition-colors hover:border-destructive hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-destructive/40 disabled:hover:text-destructive"
@@ -142,7 +163,10 @@ export function ProfileMenuContent({
             )}
           </section>
 
-          <section className="space-y-2 border-b border-border/70 pb-2">
+          <section
+            className="space-y-2 border-b border-border/70 pb-2"
+            data-profile-section="templates"
+          >
             <button
               type="button"
               onClick={() => setTemplatesMenuOpen((open) => !open)}
@@ -158,7 +182,38 @@ export function ProfileMenuContent({
             </button>
             {templatesMenuOpen && (
               <div className="px-1">
-                <p className="px-1 text-xs text-muted-foreground">Пока нет шаблонов</p>
+                <ul className="space-y-0.5 rounded-md border border-border/60 p-1">
+                  <li>
+                    <button
+                      type="button"
+                      onClick={onApplySaaSTemplate}
+                      className="w-full truncate rounded-md px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-muted"
+                    >
+                      {SAAS_TEMPLATE_PROJECT_NAME}
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      type="button"
+                      onClick={onApplyEventConferenceTemplate}
+                      className="w-full truncate rounded-md px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-muted"
+                    >
+                      {EVENT_CONFERENCE_TEMPLATE_PROJECT_NAME}
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      type="button"
+                      onClick={onApplyPortfolioServicesTemplate}
+                      className="w-full truncate rounded-md px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-muted"
+                    >
+                      {PORTFOLIO_SERVICES_TEMPLATE_PROJECT_NAME}
+                    </button>
+                  </li>
+                </ul>
+                <p className="mt-2 px-1 text-[11px] leading-snug text-muted-foreground">
+                  Сохраняет текущий проект и создаёт новый проект с выбранным лендингом.
+                </p>
               </div>
             )}
           </section>

@@ -18,6 +18,7 @@ type LeftSidebarProps = {
   currentProjectId: string | null;
   handleSelectProject: (projectId: string) => void;
   openNewProjectDialog: () => void;
+  openRenameProjectDialog: () => void;
   handleSaveClick: () => void;
   handleDeleteProject: () => void;
   deleteError: string | null;
@@ -25,6 +26,9 @@ type LeftSidebarProps = {
   logoutFormRef: React.RefObject<HTMLFormElement | null>;
   handleLogout: () => void;
   onExportClick: () => void;
+  onApplySaaSTemplate: () => void;
+  onApplyEventConferenceTemplate: () => void;
+  onApplyPortfolioServicesTemplate: () => void;
   blockLibrary: React.ReactNode;
 };
 
@@ -37,6 +41,7 @@ export function LeftSidebar({
   currentProjectId,
   handleSelectProject,
   openNewProjectDialog,
+  openRenameProjectDialog,
   handleSaveClick,
   handleDeleteProject,
   deleteError,
@@ -44,6 +49,9 @@ export function LeftSidebar({
   logoutFormRef,
   handleLogout,
   onExportClick,
+  onApplySaaSTemplate,
+  onApplyEventConferenceTemplate,
+  onApplyPortfolioServicesTemplate,
   blockLibrary,
 }: LeftSidebarProps) {
   const cloudSaveStatus = useEditorSaveStatus();
@@ -151,12 +159,28 @@ export function LeftSidebar({
                   openNewProjectDialog();
                   setIsProfileMenuOpen(false);
                 }}
+                openRenameProjectDialog={() => {
+                  openRenameProjectDialog();
+                  setIsProfileMenuOpen(false);
+                }}
                 handleSaveClick={handleSaveClick}
                 handleDeleteProject={handleDeleteProject}
                 deleteError={deleteError}
                 setFeedbackModalOpen={setFeedbackModalOpen}
                 logoutFormRef={logoutFormRef}
                 handleLogout={handleLogout}
+                onApplySaaSTemplate={() => {
+                  onApplySaaSTemplate();
+                  setIsProfileMenuOpen(false);
+                }}
+                onApplyEventConferenceTemplate={() => {
+                  onApplyEventConferenceTemplate();
+                  setIsProfileMenuOpen(false);
+                }}
+                onApplyPortfolioServicesTemplate={() => {
+                  onApplyPortfolioServicesTemplate();
+                  setIsProfileMenuOpen(false);
+                }}
               />
             </div>
           )}

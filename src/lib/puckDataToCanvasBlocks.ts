@@ -76,6 +76,7 @@ export function puckDataToCanvasBlocks(data: Partial<Data>): CanvasBlock[] {
         delete propsClean.__canvasId;
         delete propsClean.__parentId;
         delete propsClean.__zone;
+        delete propsClean.id;
 
         const blockProps = convertPropsFromPuck(type, propsClean);
         if (parentId) {

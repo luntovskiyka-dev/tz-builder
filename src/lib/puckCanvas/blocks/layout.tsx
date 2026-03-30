@@ -79,7 +79,8 @@ export function renderGridBlock(props: Record<string, unknown>, renderDropZone: 
   const slot = renderDropZone("items", undefined, {
     disallow: ["hero", "stats"],
     style: gridSlotStyle,
-    zoneClassName: "flex w-full min-h-0 flex-col md:grid",
+    zoneClassName:
+      "flex w-full min-h-0 flex-col md:grid md:auto-rows-fr md:items-stretch [&>*]:min-h-0",
     omitOuterWrapper: true,
   });
   if (!verticalPadding || verticalPadding === "0px") {

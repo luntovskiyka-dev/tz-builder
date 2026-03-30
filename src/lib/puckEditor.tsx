@@ -797,6 +797,22 @@ function normalizeComponentProps(type: string, props: Record<string, unknown>): 
   return withDefaults;
 }
 
+/** Puck indexes nodes by `props.id` (LayerTree). Mirror node `id` into props when missing. */
+function ensureComponentPropsId(
+  item: PuckNode,
+  normalizedProps: Record<string, unknown>,
+): Record<string, unknown> {
+  const existing = normalizedProps.id;
+  if (typeof existing === "string" && existing.length > 0) {
+    return normalizedProps;
+  }
+  const topId = typeof item.id === "string" ? item.id : undefined;
+  if (topId) {
+    return { ...normalizedProps, id: topId };
+  }
+  return normalizedProps;
+}
+
 export function normalizePuckData(data: Data): Data {
   const content = Array.isArray(data.content) ? data.content : [];
   const normalizedContent = content.map((item) => {
@@ -804,7 +820,8 @@ export function normalizePuckData(data: Data): Data {
     const type = normalizeBlockType(rawType) ?? rawType;
     const props = item?.props && typeof item.props === "object" ? item.props : {};
     const normalizedProps = normalizeComponentProps(type, props as Record<string, unknown>);
-    return { ...item, type, props: normalizedProps };
+    const propsWithId = ensureComponentPropsId(item as PuckNode, normalizedProps);
+    return { ...item, type, props: propsWithId };
   });
   const zones = data.zones && typeof data.zones === "object" ? data.zones : {};
   const normalizedZones: Record<string, PuckNode[]> = {};
@@ -815,7 +832,8 @@ export function normalizePuckData(data: Data): Data {
       const type = normalizeBlockType(rawType) ?? rawType;
       const props = item?.props && typeof item.props === "object" ? item.props : {};
       const normalizedProps = normalizeComponentProps(type, props as Record<string, unknown>);
-      return { ...item, type, props: normalizedProps };
+      const propsWithId = ensureComponentPropsId(item as PuckNode, normalizedProps);
+      return { ...item, type, props: propsWithId };
     });
   }
 
@@ -1064,6 +1082,7 @@ export function canvasBlocksToPuckData(blocks: CanvasBlock[]): Data {
       props: {
         ...convertPropsForPuck(normalizedType, propsWithoutTreeMeta),
         __canvasId: block.id,
+        id: block.id,
       },
     };
 
