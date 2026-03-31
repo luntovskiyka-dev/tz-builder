@@ -315,7 +315,7 @@ export function ExportModal({
           <div className="flex items-center gap-2">
             <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
             <DialogTitle className="text-base font-semibold">
-              Генерация ТЗ с AI
+              Генерация ТЗ
             </DialogTitle>
             <span className="text-[11px] font-normal text-muted-foreground">
               {blocks.length} {pluralBlocks(blocks.length)}
@@ -339,7 +339,7 @@ export function ExportModal({
             ) : (
               <>
                 <Sparkles className="h-4 w-4" />
-                Сгенерировать ТЗ с AI
+                Сгенерировать ТЗ
               </>
             )}
           </Button>
@@ -435,7 +435,7 @@ export function ExportModal({
           )}
           {!isGenerating && !aiError && !aiSpec && (
             <p className="py-8 text-sm text-muted-foreground">
-              Нажмите «Сгенерировать ТЗ с AI» чтобы создать подробное ТЗ
+              Нажмите «Сгенерировать ТЗ» чтобы создать подробное ТЗ
             </p>
           )}
         </div>

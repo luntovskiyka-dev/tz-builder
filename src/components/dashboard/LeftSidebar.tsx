@@ -195,7 +195,7 @@ export function LeftSidebar({
             projectsLoading ? "hover:bg-primary" : ""
           }`}
         >
-          Сгенерировать ТЗ с AI
+          Сгенерировать ТЗ
         </button>
       </div>
       <div className="mb-3 space-y-2">
