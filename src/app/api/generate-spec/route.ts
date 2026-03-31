@@ -28,6 +28,8 @@ const SYSTEM_PROMPT = `Ты опытный технический писател
 Не добавляй вводных фраз типа "Вот ТЗ:" — начинай сразу с документа.`;
 
 const BLOCKS_PER_BATCH = 10;
+const BATCH_MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 1200;
 
 function sendSSE(controller: ReadableStreamDefaultController<Uint8Array>, data: object) {
   const encoder = new TextEncoder();
@@ -41,6 +43,10 @@ function chunkArray<T>(items: T[], size: number): T[][] {
     chunks.push(items.slice(i, i + size));
   }
   return chunks;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export async function POST(req: NextRequest) {
@@ -133,27 +139,52 @@ ${isLastBatch ? '- В конце этой части добавь раздел "
 
 Название проекта: веб-страница`;
 
-            const stream = await client.chat.completions.create({
-              model: "deepseek-chat",
-              messages: [
-                { role: "system", content: SYSTEM_PROMPT },
-                { role: "user", content: userMessage },
-              ],
-              max_tokens: 4000,
-              temperature: 0.3,
-              stream: true,
-            });
+            let batchCompleted = false;
+            let lastError: unknown = null;
 
-            for await (const chunk of stream) {
-              const content = chunk.choices[0]?.delta?.content;
-              if (!content) continue;
+            for (let attempt = 0; attempt <= BATCH_MAX_RETRIES; attempt += 1) {
+              try {
+                const stream = await client.chat.completions.create({
+                  model: "deepseek-chat",
+                  messages: [
+                    { role: "system", content: SYSTEM_PROMPT },
+                    { role: "user", content: userMessage },
+                  ],
+                  max_tokens: 4000,
+                  temperature: 0.3,
+                  stream: true,
+                });
 
-              if (!startedStreaming) {
-                startedStreaming = true;
-                sendSSE(controller, { type: "stage", stage: "generating", message: "Генерация ТЗ..." });
+                for await (const chunk of stream) {
+                  const content = chunk.choices[0]?.delta?.content;
+                  if (!content) continue;
+
+                  if (!startedStreaming) {
+                    startedStreaming = true;
+                    sendSSE(controller, { type: "stage", stage: "generating", message: "Генерация ТЗ..." });
+                  }
+
+                  sendSSE(controller, { type: "chunk", content });
+                }
+
+                batchCompleted = true;
+                break;
+              } catch (batchError) {
+                lastError = batchError;
+                const hasMoreAttempts = attempt < BATCH_MAX_RETRIES;
+                if (!hasMoreAttempts) break;
+
+                sendSSE(controller, {
+                  type: "stage",
+                  stage: "generating",
+                  message: `Временная ошибка AI, повтор батча ${batchIndex + 1}/${batches.length}...`,
+                });
+                await sleep(RETRY_DELAY_MS);
               }
+            }
 
-              sendSSE(controller, { type: "chunk", content });
+            if (!batchCompleted) {
+              throw lastError ?? new Error("Batch generation failed");
             }
 
             if (!isLastBatch) {
