@@ -27,9 +27,20 @@ const SYSTEM_PROMPT = `Ты опытный технический писател
 Формат ответа — чистый текст с markdown-разметкой (# ## ### для заголовков).
 Не добавляй вводных фраз типа "Вот ТЗ:" — начинай сразу с документа.`;
 
+const BLOCKS_PER_BATCH = 10;
+
 function sendSSE(controller: ReadableStreamDefaultController<Uint8Array>, data: object) {
   const encoder = new TextEncoder();
   controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+}
+
+function chunkArray<T>(items: T[], size: number): T[][] {
+  if (size <= 0) return [items];
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
 }
 
 export async function POST(req: NextRequest) {
@@ -90,23 +101,7 @@ export async function POST(req: NextRequest) {
     // Build schema-aware normalized payload for the model.
     const structuredBlocks = buildStructuredSpecPayload(blocks);
 
-    const userMessage = `Создай техническое задание для страницы сайта.
-    
-Структура страницы (${blocks.length} блоков):
-${JSON.stringify(structuredBlocks, null, 2)}
-
-Название проекта: веб-страница`;
-
-    const stream = await client.chat.completions.create({
-      model: "deepseek-chat",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userMessage },
-      ],
-      max_tokens: 4000,
-      temperature: 0.3,
-      stream: true,
-    });
+    const batches = chunkArray(structuredBlocks, BLOCKS_PER_BATCH);
 
     const readable = new ReadableStream({
       async start(controller) {
@@ -114,16 +109,58 @@ ${JSON.stringify(structuredBlocks, null, 2)}
           sendSSE(controller, { type: "stage", stage: "connecting", message: "Подключение к AI..." });
           sendSSE(controller, { type: "stage", stage: "analyzing", message: "Анализ блоков..." });
 
-          let firstChunk = true;
-          for await (const chunk of stream) {
-            const content = chunk.choices[0]?.delta?.content;
-            if (content) {
-              if (firstChunk) {
-                firstChunk = false;
+          let startedStreaming = false;
+          let processedBlocks = 0;
+
+          for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
+            const batch = batches[batchIndex];
+            const isLastBatch = batchIndex === batches.length - 1;
+            const batchStart = processedBlocks + 1;
+            const batchEnd = processedBlocks + batch.length;
+
+            const userMessage = `Создай часть технического задания для страницы сайта.
+
+Это батч ${batchIndex + 1} из ${batches.length}. Опиши только блоки ${batchStart}-${batchEnd} из ${structuredBlocks.length}.
+
+Структура блоков для текущего батча:
+${JSON.stringify(batch, null, 2)}
+
+Требования:
+- Пиши только разделы для блоков из текущего батча, в формате нумерованного списка.
+- Не повторяй уже описанные блоки и не добавляй вводных фраз.
+- Сохраняй профессиональный стиль.
+${isLastBatch ? '- В конце этой части добавь раздел "Общие технические требования".' : '- Раздел "Общие технические требования" пока не добавляй.'}
+
+Название проекта: веб-страница`;
+
+            const stream = await client.chat.completions.create({
+              model: "deepseek-chat",
+              messages: [
+                { role: "system", content: SYSTEM_PROMPT },
+                { role: "user", content: userMessage },
+              ],
+              max_tokens: 4000,
+              temperature: 0.3,
+              stream: true,
+            });
+
+            for await (const chunk of stream) {
+              const content = chunk.choices[0]?.delta?.content;
+              if (!content) continue;
+
+              if (!startedStreaming) {
+                startedStreaming = true;
                 sendSSE(controller, { type: "stage", stage: "generating", message: "Генерация ТЗ..." });
               }
+
               sendSSE(controller, { type: "chunk", content });
             }
+
+            if (!isLastBatch) {
+              sendSSE(controller, { type: "chunk", content: "\n\n" });
+            }
+
+            processedBlocks += batch.length;
           }
 
           sendSSE(controller, { type: "done" });
