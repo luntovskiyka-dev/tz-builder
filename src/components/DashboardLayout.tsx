@@ -88,7 +88,18 @@ type DashboardLayoutUser = {
   subscriptionEndsAt?: string | null;
 };
 
-export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
+type DashboardLayoutPreview = {
+  initialData: Data;
+  projectName?: string;
+};
+
+export function DashboardLayout({
+  user,
+  preview,
+}: {
+  user?: DashboardLayoutUser;
+  preview?: DashboardLayoutPreview;
+}) {
   const [canvasBlocks, setCanvasBlocks] = useState<CanvasBlock[]>([]);
   const [puckData, setPuckData] = useState<Partial<Data>>({ content: [], root: { props: { title: "" } } });
   const [isInitialHydrationDone, setIsInitialHydrationDone] = useState(false);
