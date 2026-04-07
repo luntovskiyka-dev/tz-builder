@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Settings, CreditCard, MessageSquare, LogOut, FolderOpen, LayoutTemplate, Plus, Save, Pencil, Trash2 } from "lucide-react";
 import { type ProjectListItem } from "@/lib/actions/projects";
 import { logoutAction } from "@/lib/actions/auth";
 import { useEditorProjectsLoading } from "@/lib/editorChromeStore";
@@ -35,6 +35,8 @@ type ProfileMenuContentProps = {
   handleDeleteProject: () => void;
   deleteError: string | null;
   setFeedbackModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setPricingModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setBillingSettingsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   logoutFormRef: React.RefObject<HTMLFormElement | null>;
   handleLogout: () => void;
   onApplySaaSTemplate: () => void;
@@ -57,6 +59,8 @@ export function ProfileMenuContent({
   handleDeleteProject,
   deleteError,
   setFeedbackModalOpen,
+  setPricingModalOpen,
+  setBillingSettingsOpen,
   logoutFormRef,
   handleLogout,
   onApplySaaSTemplate,
@@ -94,7 +98,10 @@ export function ProfileMenuContent({
               className="flex w-full items-center justify-between rounded-md p-2 text-left text-sm text-foreground transition-colors hover:bg-muted"
               aria-expanded={projectsMenuOpen}
             >
-              <span>Проекты</span>
+              <span className="flex items-center gap-2">
+                <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                Проекты
+              </span>
               {projectsMenuOpen ? (
                 <ChevronDown className="h-4 w-4 shrink-0" />
               ) : (
@@ -130,31 +137,35 @@ export function ProfileMenuContent({
                   <button
                     type="button"
                     onClick={openNewProjectDialog}
-                    className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/50"
+                    className="flex w-full items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/50"
                   >
+                    <Plus className="h-3 w-3 text-muted-foreground" />
                     Создать проект
                   </button>
                   <button
                     type="button"
                     onClick={handleSaveClick}
-                    className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/50"
+                    className="flex w-full items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/50"
                   >
+                    <Save className="h-3 w-3 text-muted-foreground" />
                     Сохранить проект
                   </button>
                   <button
                     type="button"
                     onClick={openRenameProjectDialog}
                     disabled={!currentProjectId}
-                    className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex w-full items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
+                    <Pencil className="h-3 w-3 text-muted-foreground" />
                     Переименовать проект
                   </button>
                   <button
                     type="button"
                     onClick={openDeleteConfirm}
                     disabled={!currentProjectId}
-                    className="w-full rounded-md border border-destructive/40 bg-background px-3 py-1.5 text-xs text-destructive transition-colors hover:border-destructive hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-destructive/40 disabled:hover:text-destructive"
+                    className="flex w-full items-center gap-2 rounded-md border border-destructive/40 bg-background px-3 py-1.5 text-xs text-destructive transition-colors hover:border-destructive hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-destructive/40 disabled:hover:text-destructive"
                   >
+                    <Trash2 className="h-3 w-3" />
                     Удалить проект
                   </button>
                 </div>
@@ -173,7 +184,10 @@ export function ProfileMenuContent({
               className="flex w-full items-center justify-between rounded-md p-2 text-left text-sm text-foreground transition-colors hover:bg-muted"
               aria-expanded={templatesMenuOpen}
             >
-              <span>Шаблоны</span>
+              <span className="flex items-center gap-2">
+                <LayoutTemplate className="h-4 w-4 text-muted-foreground" />
+                Шаблоны
+              </span>
               {templatesMenuOpen ? (
                 <ChevronDown className="h-4 w-4 shrink-0" />
               ) : (
@@ -221,17 +235,35 @@ export function ProfileMenuContent({
           <section className="space-y-1">
             <button
               type="button"
-              onClick={() => setFeedbackModalOpen(true)}
-              className="w-full rounded-md p-2 text-left text-sm text-foreground transition-colors hover:bg-muted"
+              onClick={() => setBillingSettingsOpen(true)}
+              className="flex w-full items-center gap-2 rounded-md p-2 text-left text-sm text-foreground transition-colors hover:bg-muted"
             >
+              <Settings className="h-4 w-4 text-muted-foreground" />
+              Настройки
+            </button>
+            <button
+              type="button"
+              onClick={() => setPricingModalOpen(true)}
+              className="flex w-full items-center gap-2 rounded-md p-2 text-left text-sm text-foreground transition-colors hover:bg-muted"
+            >
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
+              Тарифы
+            </button>
+            <button
+              type="button"
+              onClick={() => setFeedbackModalOpen(true)}
+              className="flex w-full items-center gap-2 rounded-md p-2 text-left text-sm text-foreground transition-colors hover:bg-muted"
+            >
+              <MessageSquare className="h-4 w-4 text-muted-foreground" />
               Обратная связь
             </button>
             <form ref={logoutFormRef} action={logoutAction}>
               <button
                 type="button"
                 onClick={handleLogout}
-                className="w-full rounded-md p-2 text-left text-sm text-foreground transition-colors hover:bg-muted"
+                className="flex w-full items-center gap-2 rounded-md p-2 text-left text-sm text-foreground transition-colors hover:bg-muted"
               >
+                <LogOut className="h-4 w-4 text-muted-foreground" />
                 Выход
               </button>
             </form>

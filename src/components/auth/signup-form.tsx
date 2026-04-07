@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { AuthAlert } from "@/components/auth/AuthAlert";
 import { authFormCardClass } from "@/components/auth/auth-form-styles";
 import { signupAction } from "@/lib/actions/auth";
@@ -29,7 +30,7 @@ export function SignupForm({ className }: SignupFormProps) {
           Регистрация
         </CardTitle>
         <p className="mt-1 text-sm text-muted-foreground">
-          Создайте аккаунт, чтобы начинать и сохранять ТЗ-проекты.
+          Создайте аккаунт, чтобы начать работу с проектами.
         </p>
       </CardHeader>
       <form action={formAction}>
@@ -78,6 +79,40 @@ export function SignupForm({ className }: SignupFormProps) {
               disabled={isPending}
               className="border-border focus-visible:ring-primary"
             />
+          </div>
+
+          <div className="flex items-start gap-3 pt-2 w-full">
+            <Checkbox
+              id="agreement"
+              name="agreement"
+              required
+              disabled={isPending}
+              className="mt-1"
+            />
+            <label
+              htmlFor="agreement"
+              className="text-sm text-muted-foreground leading-relaxed cursor-pointer font-normal"
+            >
+              Я подтверждаю согласие с{" "}
+              <Link
+                href="https://protospec.ru/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary font-semibold underline-offset-2 hover:underline"
+              >
+                Политикой конфиденциальности
+              </Link>
+              {" "}и{" "}
+              <Link
+                href="https://protospec.ru/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary font-semibold underline-offset-2 hover:underline"
+              >
+                Условиями использования
+              </Link>
+              .
+            </label>
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-3 pt-6">

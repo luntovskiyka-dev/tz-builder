@@ -3,8 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { buildStructuredSpecPayload } from "@/lib/export/specPayload";
 
-const SPEC_GEN_PER_DAY = 2;
-
 const client = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY,
   baseURL: "https://api.deepseek.com",
@@ -72,9 +70,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Проверяем и списаем слот AI генерации с учетом тарифа пользователя
     const { data: quotaData, error: quotaError } = await supabase.rpc(
-      "try_consume_spec_generation",
-      { max_per_day: SPEC_GEN_PER_DAY }
+      "try_consume_spec_generation"
     );
 
     if (quotaError) {
@@ -87,18 +85,32 @@ export async function POST(req: NextRequest) {
 
     const quota = quotaData as {
       allowed?: boolean;
-      used?: number;
-      limit?: number;
+      plan?: string;
+      used_today?: number;
+      daily_limit?: number;
+      used_this_month?: number;
+      monthly_limit?: number;
       reason?: string;
     };
 
     if (!quota?.allowed) {
+      const planName = quota.plan || 'Starter';
+      let errorMessage = "Достигнут лимит генераций ТЗ.";
+      
+      if (quota.reason === 'daily_limit_exceeded') {
+        errorMessage = `Достигнут дневной лимит: ${quota.used_today} из ${quota.daily_limit} генераций сегодня. Попробуйте завтра.`;
+      } else if (quota.reason === 'monthly_limit_exceeded') {
+        errorMessage = `Достигнут месячный лимит: ${quota.used_this_month} из ${quota.monthly_limit} генераций в этом месяце. Рассмотрите апгрейд тарифа.`;
+      }
+
       return NextResponse.json(
         {
-          error:
-            "Достигнут лимит: 2 генерации ТЗ в сутки (UTC). Попробуйте завтра.",
-          used: quota?.used,
-          limit: quota?.limit ?? SPEC_GEN_PER_DAY,
+          error: errorMessage,
+          plan: planName,
+          used_today: quota?.used_today,
+          daily_limit: quota?.daily_limit,
+          used_this_month: quota?.used_this_month,
+          monthly_limit: quota?.monthly_limit,
         },
         { status: 429 }
       );

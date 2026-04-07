@@ -59,8 +59,11 @@ export function ExportModal({
 
   const [quota, setQuota] = useState<{
     authenticated: boolean;
-    remaining: number;
-    limit: number;
+    plan: string;
+    remaining_today: number;
+    daily_limit: number;
+    remaining_this_month: number;
+    monthly_limit: number;
   } | null>(null);
 
   const fetchQuota = useCallback(async () => {
@@ -69,13 +72,19 @@ export function ExportModal({
       if (!r.ok) return;
       const d = (await r.json()) as {
         authenticated?: boolean;
-        remaining?: number;
-        limit?: number;
+        plan?: string;
+        remaining_today?: number;
+        daily_limit?: number;
+        remaining_this_month?: number;
+        monthly_limit?: number;
       };
       setQuota({
         authenticated: d.authenticated ?? false,
-        remaining: d.remaining ?? 0,
-        limit: d.limit ?? 2,
+        plan: d.plan ?? 'starter',
+        remaining_today: d.remaining_today ?? 0,
+        daily_limit: d.daily_limit ?? 0,
+        remaining_this_month: d.remaining_this_month ?? 0,
+        monthly_limit: d.monthly_limit ?? 0,
       });
     } catch {
       // ignore
@@ -90,7 +99,7 @@ export function ExportModal({
     isGenerating ||
     (quota !== null &&
       quota.authenticated &&
-      quota.remaining <= 0);
+      quota.remaining_today <= 0);
 
   const handleGenerateAI = async () => {
     // Lock projectId at the moment user starts generation, so it can't change
@@ -346,9 +355,9 @@ export function ExportModal({
 
           {quota && quota.authenticated && (
             <p className="text-center text-[11px] text-muted-foreground">
-              {quota.remaining > 0
-                ? `Осталось ${quota.remaining} из ${quota.limit} генераций сегодня (UTC)`
-                : `Лимит исчерпан: ${quota.limit} генерации в сутки (UTC). Попробуйте завтра.`}
+              {quota.remaining_today > 0
+                ? `Осталось ${quota.remaining_today} из ${quota.daily_limit} генераций сегодня (план: ${quota.plan})`
+                : `Дневной лимит исчерпан: ${quota.daily_limit} генерации в сутки. Попробуйте завтра.`}
             </p>
           )}
 

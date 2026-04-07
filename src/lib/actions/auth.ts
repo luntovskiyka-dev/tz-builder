@@ -12,6 +12,7 @@ export async function signupAction(prevState: AuthFormState, formData: FormData)
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
+  const agreement = formData.get("agreement") as string;
 
   if (!email || !password) {
     return { error: "Введите email и пароль" };
@@ -23,6 +24,10 @@ export async function signupAction(prevState: AuthFormState, formData: FormData)
 
   if (password !== confirmPassword) {
     return { error: "Пароли не совпадают" };
+  }
+
+  if (!agreement) {
+    return { error: "Вы должны согласиться с Политикой конфиденциальности и Условиями использования" };
   }
 
   const { error } = await supabase.auth.signUp({

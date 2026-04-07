@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 
-const DEFAULT_LIMIT = 2;
-
 export async function GET() {
   try {
     const supabase = await createServerClient();
@@ -13,36 +11,47 @@ export async function GET() {
     if (!user) {
       return NextResponse.json({
         authenticated: false,
-        used: 0,
-        limit: DEFAULT_LIMIT,
-        remaining: 0,
+        plan: 'none',
+        used_today: 0,
+        daily_limit: 0,
+        remaining_today: 0,
+        used_this_month: 0,
+        monthly_limit: 0,
+        remaining_this_month: 0,
       });
     }
 
-    const { data, error } = await supabase.rpc("spec_generation_quota", {
-      max_per_day: DEFAULT_LIMIT,
-    });
+    // Новая функция возвращает квоту с учетом тарифа пользователя
+    const { data, error } = await supabase.rpc("get_user_ai_quota");
 
     if (error) {
-      console.error("spec_generation_quota error:", error);
+      console.error("get_user_ai_quota error:", error);
       return NextResponse.json(
         { error: "Не удалось получить лимит генераций" },
         { status: 500 }
       );
     }
 
-    const row = data as {
+    const quota = data as {
       authenticated?: boolean;
-      used?: number;
-      limit?: number;
-      remaining?: number;
+      plan?: string;
+      used_today?: number;
+      daily_limit?: number;
+      remaining_today?: number;
+      used_this_month?: number;
+      monthly_limit?: number;
+      remaining_this_month?: number;
     };
 
     return NextResponse.json({
-      authenticated: row.authenticated ?? true,
-      used: row.used ?? 0,
-      limit: row.limit ?? DEFAULT_LIMIT,
-      remaining: row.remaining ?? 0,
+      authenticated: quota.authenticated ?? true,
+      plan: quota.plan ?? 'starter',
+      used_today: quota.used_today ?? 0,
+      daily_limit: quota.daily_limit ?? 0,
+      remaining_today: quota.remaining_today ?? 0,
+      used_this_month: quota.used_this_month ?? 0,
+      monthly_limit: quota.monthly_limit ?? 0,
+      remaining_this_month: quota.remaining_this_month ?? 0,
     });
   } catch (e) {
     console.error("GET generate-spec quota:", e);

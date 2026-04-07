@@ -41,6 +41,8 @@ import {
   setEditorSaveStatus,
 } from "@/lib/editorChromeStore";
 import { FeedbackModal } from "@/components/FeedbackModal";
+import { PricingModal } from "@/components/PricingModal";
+import { BillingSettingsModal } from "@/components/settings/BillingSettingsPage";
 import { ExportModal } from "@/components/export/ExportModal";
 import { Button } from "@/components/ui/button";
 
@@ -80,6 +82,10 @@ type DashboardLayoutUser = {
   email?: string | null;
   avatarUrl?: string | null;
   plan?: string | null;
+  planName?: string | null;
+  subscriptionStatus?: string | null;
+  trialEndsAt?: string | null;
+  subscriptionEndsAt?: string | null;
 };
 
 export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
@@ -94,6 +100,8 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
   const [newProjectName, setNewProjectName] = useState("");
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [pricingModalOpen, setPricingModalOpen] = useState(false);
+  const [billingSettingsOpen, setBillingSettingsOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   /** Puck keeps only the first `data` it sees; bump key when hydrating from API so the editor remounts. */
   const [puckHydrationKey, setPuckHydrationKey] = useState(0);
@@ -492,6 +500,8 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
             handleDeleteProject={handleDeleteProject}
             deleteError={deleteError}
             setFeedbackModalOpen={setFeedbackModalOpen}
+            setPricingModalOpen={setPricingModalOpen}
+            setBillingSettingsOpen={setBillingSettingsOpen}
             logoutFormRef={logoutFormRef}
             handleLogout={handleLogout}
             onExportClick={handleExportClick}
@@ -648,6 +658,37 @@ export function DashboardLayout({ user }: { user?: DashboardLayoutUser }) {
       </Dialog>
 
       <FeedbackModal isOpen={feedbackModalOpen} onClose={() => setFeedbackModalOpen(false)} />
+      <PricingModal
+        isOpen={pricingModalOpen}
+        onClose={() => setPricingModalOpen(false)}
+        user={{
+          email: userEmail,
+          currentPlan: user?.plan ?? "starter",
+          subscriptionStatus: "none",
+        }}
+      />
+      <BillingSettingsModal
+        isOpen={billingSettingsOpen}
+        onClose={() => setBillingSettingsOpen(false)}
+        user={{
+          email: userEmail,
+          currentPlan: user?.plan ?? "starter",
+          planName: user?.planName ?? "Starter",
+          subscriptionStatus: user?.subscriptionStatus ?? "none",
+          trialEndsAt: user?.trialEndsAt ?? null,
+          subscriptionEndsAt: user?.subscriptionEndsAt ?? null,
+          aiGenerationsPerDay: 2,
+          aiGenerationsPerMonth: 0,
+        }}
+        quota={{
+          used_today: 0,
+          daily_limit: 2,
+          remaining_today: 2,
+          used_this_month: 0,
+          monthly_limit: 0,
+          remaining_this_month: 0,
+        }}
+      />
       <ExportModal
         blocks={canvasBlocks}
         isOpen={exportModalOpen}

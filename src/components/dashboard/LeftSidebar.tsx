@@ -23,6 +23,8 @@ type LeftSidebarProps = {
   handleDeleteProject: () => void;
   deleteError: string | null;
   setFeedbackModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setPricingModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setBillingSettingsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   logoutFormRef: React.RefObject<HTMLFormElement | null>;
   handleLogout: () => void;
   onExportClick: () => void;
@@ -46,6 +48,8 @@ export function LeftSidebar({
   handleDeleteProject,
   deleteError,
   setFeedbackModalOpen,
+  setPricingModalOpen,
+  setBillingSettingsOpen,
   logoutFormRef,
   handleLogout,
   onExportClick,
@@ -167,6 +171,8 @@ export function LeftSidebar({
                 handleDeleteProject={handleDeleteProject}
                 deleteError={deleteError}
                 setFeedbackModalOpen={setFeedbackModalOpen}
+                setPricingModalOpen={setPricingModalOpen}
+                setBillingSettingsOpen={setBillingSettingsOpen}
                 logoutFormRef={logoutFormRef}
                 handleLogout={handleLogout}
                 onApplySaaSTemplate={() => {
