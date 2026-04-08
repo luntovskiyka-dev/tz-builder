@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { User, Session } from "@supabase/supabase-js";
+import type { User, Session } from "@supabase/supabase-js";
 import { createBrowserClient } from "@/lib/supabase/client";
 
 export function useAuth() {
@@ -12,8 +12,8 @@ export function useAuth() {
     const supabase = createBrowserClient();
 
     // getUser() verifies the JWT server-side (unlike getSession which trusts local storage)
-    supabase.auth.getUser().then(({ data: { user: u } }) => {
-      setUser(u ?? null);
+    supabase.auth.getUser().then((res: { data: { user: User | null } }) => {
+      setUser(res.data.user);
       setLoading(false);
     });
 
