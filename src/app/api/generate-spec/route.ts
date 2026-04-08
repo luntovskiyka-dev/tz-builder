@@ -71,14 +71,42 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+const MAX_BODY_BYTES = 512_000; // 500 KB
+const MAX_BLOCKS = 50;
+
 export async function POST(req: NextRequest) {
   try {
-    const { blocks, mode } = await req.json();
+    const rawBody = await req.text();
+    if (rawBody.length > MAX_BODY_BYTES) {
+      return NextResponse.json(
+        { error: "Слишком большой запрос. Максимум 500 КБ." },
+        { status: 413 }
+      );
+    }
+
+    let parsed: { blocks?: unknown; mode?: unknown };
+    try {
+      parsed = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json(
+        { error: "Некорректный JSON" },
+        { status: 400 }
+      );
+    }
+
+    const { blocks, mode } = parsed;
     const specMode: "human" | "ai" = mode === "ai" ? "ai" : "human";
 
     if (!blocks || !Array.isArray(blocks) || blocks.length === 0) {
       return NextResponse.json(
         { error: "Нет блоков для генерации ТЗ" },
+        { status: 400 }
+      );
+    }
+
+    if (blocks.length > MAX_BLOCKS) {
+      return NextResponse.json(
+        { error: `Максимум ${MAX_BLOCKS} блоков. Сейчас: ${blocks.length}.` },
         { status: 400 }
       );
     }
