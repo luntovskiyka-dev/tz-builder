@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { shouldBlockOnQuotaError } from "@/lib/quota";
 
 export async function GET() {
   try {
@@ -26,20 +27,11 @@ export async function GET() {
     const { data, error } = await supabase.rpc("get_user_ai_quota");
 
     if (error) {
-      console.warn(
-        "get_user_ai_quota RPC failed — falling back to starter defaults:",
-        error
+      const block = shouldBlockOnQuotaError(error);
+      return NextResponse.json(
+        { error: block.message },
+        { status: block.status }
       );
-      return NextResponse.json({
-        authenticated: true,
-        plan: "starter",
-        used_today: 0,
-        daily_limit: 2,
-        remaining_today: 2,
-        used_this_month: 0,
-        monthly_limit: 999999,
-        remaining_this_month: 999999,
-      });
     }
 
     const quota = data as {

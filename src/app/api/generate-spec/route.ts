@@ -2,13 +2,14 @@ import OpenAI from "openai";
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { buildStructuredSpecPayload } from "@/lib/export/specPayload";
+import { shouldBlockOnQuotaError } from "@/lib/quota";
 
 const client = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY,
   baseURL: "https://api.deepseek.com",
 });
 
-const SYSTEM_PROMPT = `You are an experienced technical writer and project manager.
+const SYSTEM_PROMPT_HUMAN = `You are an experienced technical writer and project manager.
 Your task is to create a detailed technical specification (TZ) in Russian
 based on the website page structure described in JSON.
 
@@ -24,6 +25,29 @@ Writing rules:
 
 Response format — plain text with markdown markup (# ## ### for headings).
 Do not add introductory phrases like "Here is the TZ:" — start directly with the document.`;
+
+const SYSTEM_PROMPT_AI = `You are an expert frontend developer. Generate a complete, production-ready Next.js 14+ (App Router) website with Tailwind CSS based strictly on the JSON structure below.
+
+## Rules
+- Create a separate React component for each block type in \`components/blocks/\`.
+- On the main page (\`app/page.tsx\`), import and render the components in the exact order as they appear in the JSON array.
+- Use all data (texts, links, settings, images) exactly as provided — do not invent or omit anything.
+- Ensure full responsiveness for mobile, tablet, and desktop using Tailwind's responsive classes (\`sm:\`, \`md:\`, \`lg:\`).
+- Use semantic HTML5 tags: \`header\`, \`main\`, \`section\`, \`article\`, \`footer\`, \`nav\`, etc.
+- For images, use Next.js \`next/image\` component with proper \`width\`, \`height\`, and \`alt\` attributes.
+- Include only one \`h1\` per page; use \`h2\`, \`h3\` for other headings based on hierarchy.
+- For interactive elements (buttons, links), implement the \`href\` or \`onClick\` as specified in the JSON data.
+- If a block has a \`mediaType\` like video or YouTube, embed it appropriately.
+- Write clean, well-commented code.
+- The generated code must run after \`npm install && npm run dev\`. No missing dependencies.
+
+## Output format
+Return the full file structure and contents. For each file, specify its path and content inside a code block.
+Example:
+\`\`\`tsx:components/blocks/Hero.tsx
+// component code
+\`\`\`
+Include all necessary files: layout, page, components, and any utility functions. Do not add extra explanations before or after the code.`;
 
 const BLOCKS_PER_BATCH = 10;
 const BATCH_MAX_RETRIES = 2;
@@ -49,7 +73,8 @@ function sleep(ms: number): Promise<void> {
 
 export async function POST(req: NextRequest) {
   try {
-    const { blocks } = await req.json();
+    const { blocks, mode } = await req.json();
+    const specMode: "human" | "ai" = mode === "ai" ? "ai" : "human";
 
     if (!blocks || !Array.isArray(blocks) || blocks.length === 0) {
       return NextResponse.json(
@@ -88,18 +113,11 @@ export async function POST(req: NextRequest) {
     };
 
     if (quotaError) {
-      console.warn(
-        "try_consume_spec_generation RPC failed — falling back to starter defaults:",
-        quotaError
+      const block = shouldBlockOnQuotaError(quotaError);
+      return NextResponse.json(
+        { error: block.message },
+        { status: block.status }
       );
-      quota = {
-        allowed: true,
-        plan: "starter",
-        used_today: 0,
-        daily_limit: 2,
-        used_this_month: 0,
-        monthly_limit: 999999,
-      };
     } else {
       quota = quotaData as typeof quota;
     }
@@ -130,7 +148,11 @@ export async function POST(req: NextRequest) {
     // Build schema-aware normalized payload for the model.
     const structuredBlocks = buildStructuredSpecPayload(blocks);
 
-    const batches = chunkArray(structuredBlocks, BLOCKS_PER_BATCH);
+    // For AI mode: send ALL blocks at once (code generation needs full context).
+    // For human mode: batch by 10 blocks for progressive text spec generation.
+    const batches = specMode === "ai"
+      ? [structuredBlocks]
+      : chunkArray(structuredBlocks, BLOCKS_PER_BATCH);
 
     const readable = new ReadableStream({
       async start(controller) {
@@ -147,7 +169,14 @@ export async function POST(req: NextRequest) {
             const batchStart = processedBlocks + 1;
             const batchEnd = processedBlocks + batch.length;
 
-            const userMessage = `Create a part of the technical specification for a website page.
+            let userMessage: string;
+
+            if (specMode === "ai") {
+              userMessage = `JSON structure (project blocks):\n${JSON.stringify(batch, null, 2)}`;
+            } else {
+              userMessage = `Create a part of the technical specification for a website page.
+
+Target audience: human developer / project manager.
 
 This is batch ${batchIndex + 1} of ${batches.length}. Describe only blocks ${batchStart}-${batchEnd} out of ${structuredBlocks.length}.
 
@@ -158,9 +187,13 @@ Requirements:
 - Write only the sections for blocks from the current batch, in numbered list format.
 - Do not repeat already described blocks and do not add introductory phrases.
 - Maintain a professional tone.
+- Write for a human reader: clear explanations, professional narrative.
+- Describe user experience, visual design, and business requirements.
+- Include acceptance criteria and user stories where applicable.
 ${isLastBatch ? '- At the end of this part, add a "General Technical Requirements" section.' : '- Do not add the "General Technical Requirements" section yet.'}
 
 Project name: web page`;
+            }
 
             let batchCompleted = false;
             let lastError: unknown = null;
@@ -170,7 +203,7 @@ Project name: web page`;
                 const stream = await client.chat.completions.create({
                   model: "deepseek-chat",
                   messages: [
-                    { role: "system", content: SYSTEM_PROMPT },
+                    { role: "system", content: specMode === "ai" ? SYSTEM_PROMPT_AI : SYSTEM_PROMPT_HUMAN },
                     { role: "user", content: userMessage },
                   ],
                   max_tokens: 4000,

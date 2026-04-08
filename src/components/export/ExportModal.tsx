@@ -66,10 +66,16 @@ export function ExportModal({
     monthly_limit: number;
   } | null>(null);
 
+  const [quotaUnavailable, setQuotaUnavailable] = useState(false);
+
   const fetchQuota = useCallback(async () => {
     try {
       const r = await fetch("/api/generate-spec/quota");
-      if (!r.ok) return;
+      if (!r.ok) {
+        setQuotaUnavailable(true);
+        return;
+      }
+      setQuotaUnavailable(false);
       const d = (await r.json()) as {
         authenticated?: boolean;
         plan?: string;
@@ -87,7 +93,7 @@ export function ExportModal({
         monthly_limit: d.monthly_limit ?? 0,
       });
     } catch {
-      // ignore
+      setQuotaUnavailable(true);
     }
   }, []);
 
@@ -97,11 +103,14 @@ export function ExportModal({
 
   const generateDisabled =
     isGenerating ||
+    quotaUnavailable ||
     (quota !== null &&
       quota.authenticated &&
       quota.remaining_today <= 0);
 
-  const handleGenerateAI = async () => {
+  const [specMode, setSpecMode] = useState<"human" | "ai">("human");
+
+  const handleGenerateAI = async (mode: "human" | "ai" = specMode) => {
     // Lock projectId at the moment user starts generation, so it can't change
     // due to async project switching while the stream is running.
     const lockedProjectId =
@@ -125,7 +134,7 @@ export function ExportModal({
       const response = await fetch("/api/generate-spec", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ blocks }),
+        body: JSON.stringify({ blocks, mode }),
       });
 
       if (!response.ok) {
@@ -263,6 +272,7 @@ export function ExportModal({
       setStage("idle");
       setProgressPercent(0);
       setEtaSeconds(null);
+      setQuotaUnavailable(false);
       if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
     }
   }, [isOpen]);
@@ -332,28 +342,59 @@ export function ExportModal({
           </div>
         </DialogHeader>
 
-        {/* AI Generate button */}
+        {/* AI Generate buttons */}
         <div className="px-5 pt-4 space-y-3">
-          <Button
-            type="button"
-            onClick={handleGenerateAI}
-            disabled={generateDisabled}
-            className="w-full"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Генерирую ТЗ...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4" />
-                Сгенерировать ТЗ
-              </>
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              onClick={() => {
+                setSpecMode("human");
+                handleGenerateAI("human");
+              }}
+              disabled={generateDisabled}
+              className="flex-1"
+            >
+              {isGenerating && specMode === "human" ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Генерирую ТЗ...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Для человека
+                </>
+              )}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setSpecMode("ai");
+                handleGenerateAI("ai");
+              }}
+              disabled={generateDisabled}
+              className="flex-1"
+            >
+              {isGenerating && specMode === "ai" ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Генерирую ТЗ...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Для ИИ
+                </>
+              )}
+            </Button>
+          </div>
 
-          {quota && quota.authenticated && (
+          {quotaUnavailable && (
+            <p className="text-center text-[11px] text-red-500">
+              Сервис проверки лимитов временно недоступен. Попробуйте позже.
+            </p>
+          )}
+          {!quotaUnavailable && quota && quota.authenticated && (
             <p className="text-center text-[11px] text-muted-foreground">
               {quota.remaining_today > 0
                 ? `Осталось ${quota.remaining_today} из ${quota.daily_limit} генераций сегодня (план: ${quota.plan})`
@@ -377,7 +418,7 @@ export function ExportModal({
 
           {isGenerating && specSaveStatus === "saving" && (
             <p className="text-center text-[11px] text-muted-foreground">
-              Сохраняю ТЗ в проект...
+              {specMode === "ai" ? "Сохраняю код в проект..." : "Сохраняю ТЗ в проект..."}
             </p>
           )}
         </div>
@@ -444,7 +485,9 @@ export function ExportModal({
           )}
           {!isGenerating && !aiError && !aiSpec && (
             <p className="py-8 text-sm text-muted-foreground">
-              Нажмите «Сгенерировать ТЗ» чтобы создать подробное ТЗ
+              {specMode === "ai"
+                ? "Нажмите «Для ИИ» чтобы сгенерировать готовый код Next.js + Tailwind"
+                : "Нажмите «Для человека» чтобы создать подробное ТЗ"}
             </p>
           )}
         </div>
