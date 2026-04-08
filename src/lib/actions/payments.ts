@@ -6,6 +6,7 @@
 "use server";
 
 import { createServerClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   createPayment,
   centsToRubles,
@@ -96,8 +97,10 @@ export async function changePlanAction(newPlanSlug: string): Promise<{
     }
 
     // Бесплатный план (Starter) — просто обновляем профиль
+    // Admin client bypasses RLS — profile billing fields are protected from direct client updates
     if (newPlan.price_cents === 0) {
-      const { error: updateError } = await supabase
+      const adminDb = createAdminClient();
+      const { error: updateError } = await adminDb
         .from("user_profiles")
         .update({
           plan_id: newPlan.id,
@@ -121,7 +124,8 @@ export async function changePlanAction(newPlanSlug: string): Promise<{
       const trialEndsAt = new Date();
       trialEndsAt.setDate(trialEndsAt.getDate() + newPlan.trial_days);
 
-      const { error: updateError } = await supabase
+      const adminDb = createAdminClient();
+      const { error: updateError } = await adminDb
         .from("user_profiles")
         .update({
           plan_id: newPlan.id,
@@ -225,7 +229,8 @@ export async function cancelSubscriptionWithYooKassaAction(): Promise<{
     // здесь нужно вызвать API отмены подписки
     // Пока просто обновляем статус в БД
 
-    const { error: updateError } = await supabase
+    const adminDb = createAdminClient();
+    const { error: updateError } = await adminDb
       .from("user_profiles")
       .update({
         subscription_status: "canceled",
@@ -391,7 +396,8 @@ export async function createSubscriptionAction(
       const trialEndsAt = new Date();
       trialEndsAt.setDate(trialEndsAt.getDate() + planData.trial_days);
 
-      const { error: updateError } = await supabase
+      const adminDb = createAdminClient();
+      const { error: updateError } = await adminDb
         .from("user_profiles")
         .update({
           plan_id: planData.id,
@@ -486,7 +492,8 @@ export async function cancelSubscriptionAction(): Promise<{
       return { success: false, error: "Войдите в аккаунт" };
     }
 
-    const { error: updateError } = await supabase
+    const adminDb = createAdminClient();
+    const { error: updateError } = await adminDb
       .from("user_profiles")
       .update({
         subscription_status: "canceled",
