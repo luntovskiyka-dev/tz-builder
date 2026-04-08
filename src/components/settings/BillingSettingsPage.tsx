@@ -284,37 +284,57 @@ export function BillingSettingsModal({ isOpen, onClose, user, quota: initialQuot
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between gap-2 text-base">
-            <span className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
-              Настройки подписки
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="h-7 w-7 p-0 text-muted-foreground"
-              title="Обновить данные"
-            >
-              <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
-            </Button>
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-hidden">
+        <div className="max-h-[calc(90vh-2rem)] overflow-y-auto pr-[5px] [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:#CFCFCF_transparent] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:bg-transparent [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-corner]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#CFCFCF] [&::-webkit-scrollbar-thumb:hover]:bg-[#BDBDBD]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <span className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-muted-foreground" />
+                Настройки подписки
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="h-7 w-7 p-0 text-muted-foreground"
+                  title="Обновить данные"
+                >
+                  <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
+                </Button>
+              </span>
+            </DialogTitle>
+          </DialogHeader>
 
-        {/* Notification */}
-        {notification.type && (
-          <NotificationBanner
-            notification={notification}
-            onDismiss={dismissNotification}
-          />
-        )}
+          {/* Notification */}
+          {notification.type && (
+            <NotificationBanner
+              notification={notification}
+              onDismiss={dismissNotification}
+            />
+          )}
 
-        <div className="space-y-6">
+          <div className="mt-6 space-y-6">
           {/* Current Subscription */}
           <section className="rounded-xl border border-border bg-muted/30 p-4">
+            {hasActiveSubscription && user.currentPlan !== "project" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCancelDialog(true)}
+                disabled={canceling}
+                className="mb-3 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
+                {canceling ? (
+                  <>
+                    <RefreshCw className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    Отмена...
+                  </>
+                ) : (
+                  "Отменить подписку"
+                )}
+              </Button>
+            )}
+
             <div className="mb-3 flex items-center gap-2">
               <CreditCard className="h-4 w-4 text-muted-foreground" />
               <h3 className="text-sm font-semibold text-foreground">Текущая подписка</h3>
@@ -352,25 +372,6 @@ export function BillingSettingsModal({ isOpen, onClose, user, quota: initialQuot
                     </div>
                   )}
                 </div>
-
-                {hasActiveSubscription && user.currentPlan !== "project" && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowCancelDialog(true)}
-                    disabled={canceling}
-                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  >
-                    {canceling ? (
-                      <>
-                        <RefreshCw className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                        Отмена...
-                      </>
-                    ) : (
-                      "Отменить подписку"
-                    )}
-                  </Button>
-                )}
 
                 {user.subscriptionStatus === "trialing" && user.trialEndsAt && (
                   <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700">
@@ -494,6 +495,7 @@ export function BillingSettingsModal({ isOpen, onClose, user, quota: initialQuot
               </div>
             )}
           </section>
+          </div>
         </div>
 
         <CancelSubscriptionDialog

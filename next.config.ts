@@ -13,9 +13,10 @@ const securityHeaders = [
     value: [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      "style-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://rsms.me",
+      "style-src-elem 'self' 'unsafe-inline' https://rsms.me",
       "img-src 'self' data: https:",
-      "font-src 'self' data:",
+      "font-src 'self' data: https://rsms.me",
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.deepseek.com https://api.yookassa.ru",
       "frame-ancestors 'none'",
       "base-uri 'self'",
