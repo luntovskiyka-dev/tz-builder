@@ -141,6 +141,34 @@ export async function saveProjectAction(
       return { projectId };
     }
 
+    // Enforce max_active_projects limit from user's plan
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("plan_id")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.plan_id) {
+      const { data: plan } = await supabase
+        .from("plans")
+        .select("max_active_projects")
+        .eq("id", profile.plan_id)
+        .single();
+
+      if (plan?.max_active_projects != null) {
+        const { count } = await supabase
+          .from("projects")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id);
+
+        if (count != null && count >= plan.max_active_projects) {
+          return {
+            error: `Достигнут лимит проектов (${plan.max_active_projects}). Удалите старый проект или обновите тариф.`,
+          };
+        }
+      }
+    }
+
     const { data: inserted, error } = await supabase
       .from("projects")
       .insert({

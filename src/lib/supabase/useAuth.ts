@@ -11,13 +11,12 @@ export function useAuth() {
   useEffect(() => {
     const supabase = createBrowserClient();
 
-    // Получаем текущую сессию
-    supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
-      setUser(session?.user ?? null);
+    // getUser() verifies the JWT server-side (unlike getSession which trusts local storage)
+    supabase.auth.getUser().then(({ data: { user: u } }) => {
+      setUser(u ?? null);
       setLoading(false);
     });
 
-    // Подписываемся на изменения сессии
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {

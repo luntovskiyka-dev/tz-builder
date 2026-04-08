@@ -17,14 +17,15 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
+          const maxAgeSec = Number(process.env.SESSION_COOKIE_MAX_AGE_DAYS || 7) * 86400;
           cookiesToSet.forEach(({ name, value, options }) => {
-            // Устанавливаем куки с правильными настройками для сохранения сессии
             supabaseResponse.cookies.set(name, value, {
               ...options,
               path: "/",
-              maxAge: 60 * 60 * 24 * 30, // 30 дней
+              maxAge: maxAgeSec,
               sameSite: "lax",
               secure: process.env.NODE_ENV === "production",
+              httpOnly: true,
             });
           });
         },

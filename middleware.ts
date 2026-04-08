@@ -12,7 +12,9 @@ export const config = {
     // - _next/image (image optimization files)
     // - favicon.ico (favicon file)
     // - public files (public folder)
-    // - api routes (Supabase auth endpoints)
+    // - api routes — excluded to avoid unnecessary session refresh overhead.
+    //   IMPORTANT: every API route MUST authenticate via getUser() or webhook
+    //   signature verification independently.
     "/((?!_next/static|_next/image|favicon.ico|\\.(?:svg|png|jpg|jpeg|gif|webp)$|api/).*)",
   ],
 };
