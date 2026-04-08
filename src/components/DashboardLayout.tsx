@@ -565,6 +565,18 @@ export function DashboardLayout({
     };
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("pricing") === "true") {
+      setPricingModalOpen(true);
+      params.delete("pricing");
+      const cleanUrl = params.toString()
+        ? `${window.location.pathname}?${params}`
+        : window.location.pathname;
+      window.history.replaceState({}, "", cleanUrl);
+    }
+  }, []);
+
   return (
     <>
       <div className="flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-background">

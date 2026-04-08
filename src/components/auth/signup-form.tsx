@@ -13,9 +13,10 @@ import { signupAction } from "@/lib/actions/auth";
 
 type SignupFormProps = {
   className?: string;
+  redirectTo?: string;
 };
 
-export function SignupForm({ className }: SignupFormProps) {
+export function SignupForm({ className, redirectTo }: SignupFormProps) {
   const [state, formAction, isPending] = useActionState(signupAction, null);
 
   return (
@@ -121,7 +122,10 @@ export function SignupForm({ className }: SignupFormProps) {
           </Button>
           <p className="w-full text-center text-sm text-muted-foreground">
             Уже есть аккаунт?{" "}
-            <Link href="/login" className="font-medium text-primary underline-offset-4 hover:underline">
+            <Link
+              href={redirectTo ? `/login?next=${encodeURIComponent(redirectTo)}` : "/login"}
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
               Войти
             </Link>
           </p>

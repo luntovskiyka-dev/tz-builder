@@ -2,6 +2,7 @@
 
 import { mapLoginErrorMessage, mapSignupErrorMessage } from "@/lib/auth-messages";
 import { createServerClient } from "@/lib/supabase/server";
+import { getSafeRedirectPath } from "@/lib/redirect";
 import { rateLimit } from "@/lib/rate-limit";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -73,10 +74,12 @@ export async function loginAction(prevState: AuthFormState, formData: FormData) 
   });
 
   if (error) return { error: mapLoginErrorMessage(error.message) };
-  redirect("/dashboard");
+
+  const next = formData.get("next") as string | null;
+  redirect(getSafeRedirectPath(next));
 }
 
-export async function signInWithGoogleAction() {
+export async function signInWithGoogleAction(formData: FormData) {
   const supabase = await createServerClient();
   const headerStore = await headers();
   const origin = headerStore.get("origin");
@@ -86,8 +89,9 @@ export async function signInWithGoogleAction() {
     redirect("/auth/error?source=oauth&code=missing_site_url");
   }
 
+  const next = formData.get("next") as string | null;
   const callbackUrl = new URL("/auth/callback", siteUrl);
-  callbackUrl.searchParams.set("next", "/dashboard");
+  callbackUrl.searchParams.set("next", getSafeRedirectPath(next));
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",

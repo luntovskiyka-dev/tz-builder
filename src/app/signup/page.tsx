@@ -1,10 +1,15 @@
 import { AuthPageShell } from "@/components/auth/auth-page-shell";
 import { SignupForm } from "@/components/auth/signup-form";
 
-export default function SignupPage() {
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
   return (
     <AuthPageShell>
-      <SignupForm />
+      <SignupForm redirectTo={next} />
     </AuthPageShell>
   );
 }

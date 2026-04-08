@@ -13,9 +13,10 @@ import { loginAction, signInWithGoogleAction } from "@/lib/actions/auth";
 
 type LoginFormProps = {
   className?: string;
+  redirectTo?: string;
 };
 
-export function LoginForm({ className }: LoginFormProps) {
+export function LoginForm({ className, redirectTo }: LoginFormProps) {
   const [state, formAction, isPending] = useActionState(loginAction, null);
 
   return (
@@ -34,6 +35,7 @@ export function LoginForm({ className }: LoginFormProps) {
         </p>
       </CardHeader>
       <form action={formAction}>
+        {redirectTo && <input type="hidden" name="next" value={redirectTo} />}
         <CardContent className="space-y-4">
           <AuthAlert type="error" message={state?.error ?? ""} />
 
@@ -73,11 +75,15 @@ export function LoginForm({ className }: LoginFormProps) {
       </form>
       <CardFooter className="flex flex-col gap-3 pt-0">
         <form action={signInWithGoogleAction} className="w-full">
+          {redirectTo && <input type="hidden" name="next" value={redirectTo} />}
           <GoogleLoginButton disabled={isPending} />
         </form>
         <p className="w-full text-center text-sm text-muted-foreground">
           Нет аккаунта?{" "}
-          <Link href="/signup" className="font-medium text-primary underline-offset-4 hover:underline">
+          <Link
+            href={redirectTo ? `/signup?next=${encodeURIComponent(redirectTo)}` : "/signup"}
+            className="font-medium text-primary underline-offset-4 hover:underline"
+          >
             Зарегистрироваться
           </Link>
         </p>
