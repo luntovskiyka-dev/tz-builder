@@ -43,6 +43,8 @@ import {
 import { FeedbackModal } from "@/components/FeedbackModal";
 import { PricingModal } from "@/components/PricingModal";
 import { BillingSettingsModal } from "@/components/settings/BillingSettingsPage";
+import { ProjectsModal } from "@/components/projects/ProjectsModal";
+import { TemplatesModal } from "@/components/templates/TemplatesModal";
 import { ExportModal } from "@/components/export/ExportModal";
 import { Button } from "@/components/ui/button";
 
@@ -113,6 +115,8 @@ export function DashboardLayout({
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
   const [billingSettingsOpen, setBillingSettingsOpen] = useState(false);
+  const [projectsModalOpen, setProjectsModalOpen] = useState(false);
+  const [templatesModalOpen, setTemplatesModalOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   /** Puck keeps only the first `data` it sees; bump key when hydrating from API so the editor remounts. */
   const [puckHydrationKey, setPuckHydrationKey] = useState(0);
@@ -502,23 +506,14 @@ export function DashboardLayout({
             avatarUrl={avatarUrl}
             userName={userName}
             userEmail={userEmail}
-            projectsList={projectsList}
-            currentProjectId={currentProjectId}
-            handleSelectProject={handleSelectProject}
-            openNewProjectDialog={openNewProjectDialog}
-            openRenameProjectDialog={openRenameProjectDialog}
-            handleSaveClick={handleSaveClick}
-            handleDeleteProject={handleDeleteProject}
-            deleteError={deleteError}
+            setProjectsModalOpen={setProjectsModalOpen}
+            setTemplatesModalOpen={setTemplatesModalOpen}
             setFeedbackModalOpen={setFeedbackModalOpen}
             setPricingModalOpen={setPricingModalOpen}
             setBillingSettingsOpen={setBillingSettingsOpen}
             logoutFormRef={logoutFormRef}
             handleLogout={handleLogout}
             onExportClick={handleExportClick}
-            onApplySaaSTemplate={handleApplySaaSTemplate}
-            onApplyEventConferenceTemplate={handleApplyEventConferenceTemplate}
-            onApplyPortfolioServicesTemplate={handleApplyPortfolioServicesTemplate}
             blockLibrary={<Puck.Components />}
           />
           <PuckSelectionShell>{children}</PuckSelectionShell>
@@ -699,6 +694,25 @@ export function DashboardLayout({
           monthly_limit: 0,
           remaining_this_month: 0,
         }}
+      />
+      <ProjectsModal
+        isOpen={projectsModalOpen}
+        onClose={() => setProjectsModalOpen(false)}
+        projectsList={projectsList}
+        currentProjectId={currentProjectId}
+        handleSelectProject={handleSelectProject}
+        openNewProjectDialog={openNewProjectDialog}
+        openRenameProjectDialog={openRenameProjectDialog}
+        handleSaveClick={handleSaveClick}
+        handleDeleteProject={handleDeleteProject}
+        deleteError={deleteError}
+      />
+      <TemplatesModal
+        isOpen={templatesModalOpen}
+        onClose={() => setTemplatesModalOpen(false)}
+        onApplySaaSTemplate={handleApplySaaSTemplate}
+        onApplyEventConferenceTemplate={handleApplyEventConferenceTemplate}
+        onApplyPortfolioServicesTemplate={handleApplyPortfolioServicesTemplate}
       />
       <ExportModal
         blocks={canvasBlocks}

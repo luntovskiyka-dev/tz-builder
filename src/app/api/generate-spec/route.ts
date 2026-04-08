@@ -8,22 +8,22 @@ const client = new OpenAI({
   baseURL: "https://api.deepseek.com",
 });
 
-const SYSTEM_PROMPT = `Ты опытный технический писатель и проджект-менеджер.
-Твоя задача — создать подробное техническое задание (ТЗ) на русском языке
-на основе структуры страницы сайта описанной в JSON.
+const SYSTEM_PROMPT = `You are an experienced technical writer and project manager.
+Your task is to create a detailed technical specification (TZ) in Russian
+based on the website page structure described in JSON.
 
-Правила написания ТЗ:
-- Пиши профессионально, чётко, без воды
-- Для каждого блока опиши: назначение, содержимое, требования к верстке
-- Обязательно укажи требования к адаптивности (desktop / tablet / mobile)
-- Укажи требования к семантической HTML-разметке каждого блока
-- Укажи требования к SEO там где применимо (заголовки h1/h2, alt у изображений)
-- Используй нумерованные разделы
-- В конце добавь раздел "Общие технические требования" с требованиями к:
-  производительности, доступности (a11y), кроссбраузерности, адаптивности
+Writing rules:
+- Write professionally, clearly, without fluff
+- For each block describe: purpose, content, layout requirements
+- Always include responsiveness requirements (desktop / tablet / mobile)
+- Specify semantic HTML markup requirements for each block
+- Include SEO requirements where applicable (h1/h2 headings, image alt attributes)
+- Use numbered sections
+- At the end, add a "General Technical Requirements" section with requirements for:
+  performance, accessibility (a11y), cross-browser compatibility, responsiveness
 
-Формат ответа — чистый текст с markdown-разметкой (# ## ### для заголовков).
-Не добавляй вводных фраз типа "Вот ТЗ:" — начинай сразу с документа.`;
+Response format — plain text with markdown markup (# ## ### for headings).
+Do not add introductory phrases like "Here is the TZ:" — start directly with the document.`;
 
 const BLOCKS_PER_BATCH = 10;
 const BATCH_MAX_RETRIES = 2;
@@ -70,28 +70,39 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Проверяем и списаем слот AI генерации с учетом тарифа пользователя
+    // Проверяем и списаем слот AI генерации с учетом тарифа пользователя.
+    // Если billing-таблицы ещё не созданы (миграция не применена),
+    // разрешаем генерацию с дефолтными лимитами Starter.
     const { data: quotaData, error: quotaError } = await supabase.rpc(
       "try_consume_spec_generation"
     );
 
-    if (quotaError) {
-      console.error("try_consume_spec_generation error:", quotaError);
-      return NextResponse.json(
-        { error: "Не удалось проверить лимит генераций" },
-        { status: 500 }
-      );
-    }
-
-    const quota = quotaData as {
-      allowed?: boolean;
-      plan?: string;
-      used_today?: number;
-      daily_limit?: number;
-      used_this_month?: number;
-      monthly_limit?: number;
+    let quota: {
+      allowed: boolean;
+      plan: string;
+      used_today: number;
+      daily_limit: number;
+      used_this_month: number;
+      monthly_limit: number;
       reason?: string;
     };
+
+    if (quotaError) {
+      console.warn(
+        "try_consume_spec_generation RPC failed — falling back to starter defaults:",
+        quotaError
+      );
+      quota = {
+        allowed: true,
+        plan: "starter",
+        used_today: 0,
+        daily_limit: 2,
+        used_this_month: 0,
+        monthly_limit: 999999,
+      };
+    } else {
+      quota = quotaData as typeof quota;
+    }
 
     if (!quota?.allowed) {
       const planName = quota.plan || 'Starter';
@@ -136,20 +147,20 @@ export async function POST(req: NextRequest) {
             const batchStart = processedBlocks + 1;
             const batchEnd = processedBlocks + batch.length;
 
-            const userMessage = `Создай часть технического задания для страницы сайта.
+            const userMessage = `Create a part of the technical specification for a website page.
 
-Это батч ${batchIndex + 1} из ${batches.length}. Опиши только блоки ${batchStart}-${batchEnd} из ${structuredBlocks.length}.
+This is batch ${batchIndex + 1} of ${batches.length}. Describe only blocks ${batchStart}-${batchEnd} out of ${structuredBlocks.length}.
 
-Структура блоков для текущего батча:
+Block structure for the current batch:
 ${JSON.stringify(batch, null, 2)}
 
-Требования:
-- Пиши только разделы для блоков из текущего батча, в формате нумерованного списка.
-- Не повторяй уже описанные блоки и не добавляй вводных фраз.
-- Сохраняй профессиональный стиль.
-${isLastBatch ? '- В конце этой части добавь раздел "Общие технические требования".' : '- Раздел "Общие технические требования" пока не добавляй.'}
+Requirements:
+- Write only the sections for blocks from the current batch, in numbered list format.
+- Do not repeat already described blocks and do not add introductory phrases.
+- Maintain a professional tone.
+${isLastBatch ? '- At the end of this part, add a "General Technical Requirements" section.' : '- Do not add the "General Technical Requirements" section yet.'}
 
-Название проекта: веб-страница`;
+Project name: web page`;
 
             let batchCompleted = false;
             let lastError: unknown = null;

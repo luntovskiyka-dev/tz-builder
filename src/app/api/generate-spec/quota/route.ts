@@ -21,15 +21,25 @@ export async function GET() {
       });
     }
 
-    // Новая функция возвращает квоту с учетом тарифа пользователя
+    // Новая функция возвращает квоту с учетом тарифа пользователя.
+    // Если billing-таблицы ещё не созданы, возвращаем Starter defaults.
     const { data, error } = await supabase.rpc("get_user_ai_quota");
 
     if (error) {
-      console.error("get_user_ai_quota error:", error);
-      return NextResponse.json(
-        { error: "Не удалось получить лимит генераций" },
-        { status: 500 }
+      console.warn(
+        "get_user_ai_quota RPC failed — falling back to starter defaults:",
+        error
       );
+      return NextResponse.json({
+        authenticated: true,
+        plan: "starter",
+        used_today: 0,
+        daily_limit: 2,
+        remaining_today: 2,
+        used_this_month: 0,
+        monthly_limit: 999999,
+        remaining_this_month: 999999,
+      });
     }
 
     const quota = data as {

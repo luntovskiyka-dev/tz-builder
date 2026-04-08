@@ -5,7 +5,6 @@ import Image from "next/image";
 import { ChevronDown } from "lucide-react";
 import { useEditorProjectsLoading, useEditorSaveStatus } from "@/lib/editorChromeStore";
 import { ProfileMenuContent } from "@/components/dashboard/ProfileMenuContent";
-import { type ProjectListItem } from "@/lib/actions/projects";
 
 const PROFILE_MENU_PANEL_ID = "profile-menu-dropdown";
 
@@ -14,23 +13,14 @@ type LeftSidebarProps = {
   avatarUrl: string;
   userName: string;
   userEmail: string;
-  projectsList: ProjectListItem[];
-  currentProjectId: string | null;
-  handleSelectProject: (projectId: string) => void;
-  openNewProjectDialog: () => void;
-  openRenameProjectDialog: () => void;
-  handleSaveClick: () => void;
-  handleDeleteProject: () => void;
-  deleteError: string | null;
+  setProjectsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setTemplatesModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setFeedbackModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setPricingModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setBillingSettingsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   logoutFormRef: React.RefObject<HTMLFormElement | null>;
   handleLogout: () => void;
   onExportClick: () => void;
-  onApplySaaSTemplate: () => void;
-  onApplyEventConferenceTemplate: () => void;
-  onApplyPortfolioServicesTemplate: () => void;
   blockLibrary: React.ReactNode;
 };
 
@@ -39,30 +29,19 @@ export function LeftSidebar({
   avatarUrl,
   userName,
   userEmail,
-  projectsList,
-  currentProjectId,
-  handleSelectProject,
-  openNewProjectDialog,
-  openRenameProjectDialog,
-  handleSaveClick,
-  handleDeleteProject,
-  deleteError,
+  setProjectsModalOpen,
+  setTemplatesModalOpen,
   setFeedbackModalOpen,
   setPricingModalOpen,
   setBillingSettingsOpen,
   logoutFormRef,
   handleLogout,
   onExportClick,
-  onApplySaaSTemplate,
-  onApplyEventConferenceTemplate,
-  onApplyPortfolioServicesTemplate,
   blockLibrary,
 }: LeftSidebarProps) {
   const cloudSaveStatus = useEditorSaveStatus();
   const projectsLoading = useEditorProjectsLoading();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [projectsMenuOpen, setProjectsMenuOpen] = useState(false);
-  const [templatesMenuOpen, setTemplatesMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -149,44 +128,13 @@ export function LeftSidebar({
             >
               <ProfileMenuContent
                 userEmail={userEmail}
-                projectsMenuOpen={projectsMenuOpen}
-                setProjectsMenuOpen={setProjectsMenuOpen}
-                templatesMenuOpen={templatesMenuOpen}
-                setTemplatesMenuOpen={setTemplatesMenuOpen}
-                projectsList={projectsList}
-                currentProjectId={currentProjectId}
-                handleSelectProject={(projectId) => {
-                  handleSelectProject(projectId);
-                  setIsProfileMenuOpen(false);
-                }}
-                openNewProjectDialog={() => {
-                  openNewProjectDialog();
-                  setIsProfileMenuOpen(false);
-                }}
-                openRenameProjectDialog={() => {
-                  openRenameProjectDialog();
-                  setIsProfileMenuOpen(false);
-                }}
-                handleSaveClick={handleSaveClick}
-                handleDeleteProject={handleDeleteProject}
-                deleteError={deleteError}
+                setProjectsModalOpen={setProjectsModalOpen}
+                setTemplatesModalOpen={setTemplatesModalOpen}
                 setFeedbackModalOpen={setFeedbackModalOpen}
                 setPricingModalOpen={setPricingModalOpen}
                 setBillingSettingsOpen={setBillingSettingsOpen}
                 logoutFormRef={logoutFormRef}
                 handleLogout={handleLogout}
-                onApplySaaSTemplate={() => {
-                  onApplySaaSTemplate();
-                  setIsProfileMenuOpen(false);
-                }}
-                onApplyEventConferenceTemplate={() => {
-                  onApplyEventConferenceTemplate();
-                  setIsProfileMenuOpen(false);
-                }}
-                onApplyPortfolioServicesTemplate={() => {
-                  onApplyPortfolioServicesTemplate();
-                  setIsProfileMenuOpen(false);
-                }}
               />
             </div>
           )}
