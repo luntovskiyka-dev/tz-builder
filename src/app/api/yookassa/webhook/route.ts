@@ -5,7 +5,7 @@
 // =====================================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   parseWebhookEvent,
   verifyWebhookSignature,
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     const event: YooKassaWebhookEvent = parseWebhookEvent(body);
     const eventId = event.event.id || crypto.randomUUID();
 
-    const supabase = await createServerClient();
+    const supabase = createAdminClient();
 
     // ИДЕМПОТЕНТНОСТЬ: Проверяем, не обрабатывали ли уже это событие
     const { data: existingEvent } = await supabase
@@ -137,7 +137,7 @@ async function handlePaymentSucceeded(event: YooKassaWebhookEvent) {
 
   console.log(`💰 Payment succeeded: ${paymentId} by user ${userId} for ${planSlug}`);
 
-  const supabase = await createServerClient();
+  const supabase = createAdminClient();
 
   // Обновляем статус платежа
   const { error: updatePaymentError } = await supabase
@@ -250,7 +250,7 @@ async function handlePaymentCanceled(event: YooKassaWebhookEvent) {
   const paymentId = event.event.id;
   console.log(`💸 Payment canceled: ${paymentId}`);
 
-  const supabase = await createServerClient();
+  const supabase = createAdminClient();
 
   // Обновляем статус платежа
   const { error: updatePaymentError } = await supabase
@@ -279,7 +279,7 @@ async function handlePaymentFailed(event: YooKassaWebhookEvent) {
   const paymentId = event.event.id;
   console.log(`❌ Payment failed: ${paymentId}`);
 
-  const supabase = await createServerClient();
+  const supabase = createAdminClient();
 
   // Обновляем статус платежа
   const { error: updatePaymentError } = await supabase
@@ -311,7 +311,7 @@ async function handleRefundSucceeded(event: YooKassaWebhookEvent) {
   const paymentId = event.object?.payment_id || event.event.id;
   console.log(`💸 Refund succeeded for payment: ${paymentId}`);
 
-  const supabase = await createServerClient();
+  const supabase = createAdminClient();
 
   // Обновляем статус платежа
   const { error: updatePaymentError } = await supabase
