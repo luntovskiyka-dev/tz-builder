@@ -2,14 +2,24 @@
 
 import { mapLoginErrorMessage, mapSignupErrorMessage } from "@/lib/auth-messages";
 import { createServerClient } from "@/lib/supabase/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+
+const AUTH_RATE_LIMIT = 5;           // max attempts
+const AUTH_RATE_WINDOW_MS = 60_000;  // per 60 seconds
 
 export type AuthFormState = { error?: string; success?: string } | null;
 
 export async function signupAction(prevState: AuthFormState, formData: FormData) {
-  const supabase = await createServerClient();
   const email = formData.get("email") as string;
+
+  const rl = rateLimit(`signup:${email ?? "unknown"}`, AUTH_RATE_LIMIT, AUTH_RATE_WINDOW_MS);
+  if (!rl.allowed) {
+    return { error: "Слишком много попыток регистрации. Подождите минуту." };
+  }
+
+  const supabase = await createServerClient();
   const password = formData.get("password") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
   const agreement = formData.get("agreement") as string;
@@ -43,8 +53,14 @@ export async function signupAction(prevState: AuthFormState, formData: FormData)
 }
 
 export async function loginAction(prevState: AuthFormState, formData: FormData) {
-  const supabase = await createServerClient();
   const email = formData.get("email") as string;
+
+  const rl = rateLimit(`login:${email ?? "unknown"}`, AUTH_RATE_LIMIT, AUTH_RATE_WINDOW_MS);
+  if (!rl.allowed) {
+    return { error: "Слишком много попыток входа. Подождите минуту." };
+  }
+
+  const supabase = await createServerClient();
   const password = formData.get("password") as string;
 
   if (!email || !password) {
