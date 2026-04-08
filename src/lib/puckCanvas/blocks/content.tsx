@@ -9,6 +9,7 @@ import {
   asString,
   isPuckEditing,
 } from "@/lib/puckCanvas/utils";
+import { sanitizeHtml } from "@/lib/sanitize";
 import { DEFAULT_CARD_ICON } from "@/lib/cardLucideIcons";
 
 const HERO_SUBTITLE =
@@ -71,7 +72,7 @@ export function renderHeroBlock(props: Record<string, unknown>): ReactNode {
   const subtitle = (
     <div
       className={`mt-4 max-w-xl ${HERO_SUBTITLE} ${align === "center" ? "mx-auto text-center" : ""}`}
-      dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+      dangerouslySetInnerHTML={{ __html: sanitizeHtml(descriptionHtml) }}
     />
   );
 

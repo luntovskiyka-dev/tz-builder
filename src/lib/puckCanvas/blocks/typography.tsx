@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { asString, isPuckEditing } from "@/lib/puckCanvas/utils";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 function headingSizeClass(size: string): string {
   switch (size) {
@@ -93,7 +94,7 @@ export function renderRichTextBlock(props: Record<string, unknown>): ReactNode {
   const rt = props.richtext;
 
   if (typeof rt === "string") {
-    const html = rt.trim() === "" ? "<p>Rich text</p>" : rt;
+    const html = rt.trim() === "" ? "<p>Rich text</p>" : sanitizeHtml(rt);
     return (
       <div
         className={`mx-auto w-full max-w-3xl text-foreground ${RICHTEXT_WRAPPER}`}
