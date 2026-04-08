@@ -24,11 +24,13 @@
 
 ---
 
-## 🔑 Настроенные ключи
+## 🔑 Настройка ключей
+
+Скопируйте значения из личного кабинета ЮKassa в `.env.local`:
 
 ```
-YOOKASSA_SHOP_ID=REDACTED_SHOP_ID
-YOOKASSA_SECRET_KEY=REDACTED_YOOKASSA_KEY
+YOOKASSA_SHOP_ID=<your_shop_id>
+YOOKASSA_SECRET_KEY=<your_secret_key>
 YOOKASSA_RETURN_URL=https://app.protospec.ru/api/yookassa/return
 ```
 
