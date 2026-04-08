@@ -161,11 +161,10 @@ export async function verifyWebhookSignature(
     hmac.update(body);
     const expectedSignature = hmac.digest("hex");
 
-    // Сравниваем сигнатуры (constant-time comparison)
-    return crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expectedSignature)
-    );
+    const sigBuf = Buffer.from(signature);
+    const expectedBuf = Buffer.from(expectedSignature);
+    if (sigBuf.length !== expectedBuf.length) return false;
+    return crypto.timingSafeEqual(sigBuf, expectedBuf);
   } catch (error) {
     console.error("Webhook signature verification error:", error);
     return false;
