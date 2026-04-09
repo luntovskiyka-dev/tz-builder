@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import type { RenderDropZoneFn } from "@/lib/puckCanvas/dropZone";
+import type { PuckSlotComponent } from "@/lib/puckCanvas/dropZone";
 import {
   asString,
   getGridColumnCount,
@@ -7,7 +7,7 @@ import {
   parseNumeric,
 } from "@/lib/puckCanvas/utils";
 
-export function renderFlexBlock(props: Record<string, unknown>, renderDropZone: RenderDropZoneFn): ReactNode {
+export function renderFlexBlock(props: Record<string, unknown>, Children: PuckSlotComponent | undefined): ReactNode {
   const layoutObj =
     props.layout && typeof props.layout === "object" && !Array.isArray(props.layout)
       ? (props.layout as Record<string, unknown>)
@@ -40,13 +40,14 @@ export function renderFlexBlock(props: Record<string, unknown>, renderDropZone: 
   const sectionShell = (
     <div className="h-full min-h-0 w-full px-4 md:px-6">
       <div className="mx-auto h-full min-h-0 w-full max-w-[1280px]">
-        {renderDropZone("children", undefined, {
-          disallow: ["hero", "stats"],
-          style: flexStyle,
-          zoneClassName: "flex h-full min-h-0 w-full",
-          minEmptyHeight: 48,
-          omitOuterWrapper: true,
-        })}
+        {Children ? (
+          Children({
+            disallow: ["hero", "stats"],
+            style: flexStyle,
+            className: "flex h-full min-h-0 w-full",
+            minEmptyHeight: 48,
+          })
+        ) : null}
       </div>
     </div>
   );
@@ -61,7 +62,7 @@ export function renderFlexBlock(props: Record<string, unknown>, renderDropZone: 
   );
 }
 
-export function renderGridBlock(props: Record<string, unknown>, renderDropZone: RenderDropZoneFn): ReactNode {
+export function renderGridBlock(props: Record<string, unknown>, Items: PuckSlotComponent | undefined): ReactNode {
   const count = getGridColumnCount(props.numColumns);
   const gapPx = Math.max(0, Math.round(parseNumeric(props.gap, 24)));
   const cols = `repeat(${count}, 1fr)`;
@@ -76,13 +77,14 @@ export function renderGridBlock(props: Record<string, unknown>, renderDropZone: 
     width: "100%",
     boxSizing: "border-box",
   };
-  const slot = renderDropZone("items", undefined, {
-    disallow: ["hero", "stats"],
-    style: gridSlotStyle,
-    zoneClassName:
-      "flex w-full min-h-0 flex-col md:grid md:auto-rows-fr md:items-stretch [&>*]:min-h-0",
-    omitOuterWrapper: true,
-  });
+  const slot = Items
+    ? Items({
+        disallow: ["hero", "stats"],
+        style: gridSlotStyle,
+        className:
+          "flex w-full min-h-0 flex-col md:grid md:auto-rows-fr md:items-stretch [&>*]:min-h-0",
+      })
+    : null;
   if (!verticalPadding || verticalPadding === "0px") {
     return slot;
   }

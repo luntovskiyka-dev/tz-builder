@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { getBlockLabel } from "@/lib/puckBlocks";
-import { createRenderDropZone } from "@/lib/puckCanvas/dropZone";
+import type { PuckSlotComponent } from "@/lib/puckCanvas/dropZone";
 import { renderTextSummary } from "@/lib/puckCanvas/utils";
 import { renderFooterBlock, renderHeaderBlock } from "@/lib/puckCanvas/blocks/chrome";
 import {
@@ -18,9 +18,11 @@ import {
   renderTextBlock,
 } from "@/lib/puckCanvas/blocks/typography";
 
-export function renderBlockPreview(typeId: string, props: Record<string, unknown>): ReactNode {
-  const renderDropZone = createRenderDropZone(props);
+function asPuckSlot(value: unknown): PuckSlotComponent | undefined {
+  return typeof value === "function" ? (value as PuckSlotComponent) : undefined;
+}
 
+export function renderBlockPreview(typeId: string, props: Record<string, unknown>): ReactNode {
   if (typeId === "heading") {
     return renderHeadingBlock(props);
   }
@@ -42,11 +44,11 @@ export function renderBlockPreview(typeId: string, props: Record<string, unknown
   }
 
   if (typeId === "flex") {
-    return renderFlexBlock(props, renderDropZone);
+    return renderFlexBlock(props, asPuckSlot(props.children));
   }
 
   if (typeId === "grid") {
-    return renderGridBlock(props, renderDropZone);
+    return renderGridBlock(props, asPuckSlot(props.items));
   }
 
   if (typeId === "logos") {
@@ -62,7 +64,7 @@ export function renderBlockPreview(typeId: string, props: Record<string, unknown
   }
 
   if (typeId === "template") {
-    return renderTemplateBlock(props, renderDropZone);
+    return renderTemplateBlock(props, asPuckSlot(props.children));
   }
 
   if (typeId === "header") {

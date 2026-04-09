@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Puck, usePuck, type Data, type Plugin, type UiState } from "@puckeditor/core";
+import { Puck, type Data, type Plugin, type UiState } from "@puckeditor/core";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -26,6 +26,7 @@ import {
   puckConfig,
   puckDataToCanvasBlocks,
   puckOverrides,
+  usePuckSelector,
 } from "@/lib/puckEditor";
 import { EVENT_CONFERENCE_PUCK_DATA } from "@/lib/eventConferenceLanding";
 import { SAAS_UNIVERSAL_PUCK_DATA } from "@/lib/saasUniversalLanding";
@@ -61,7 +62,7 @@ const PUCK_HIDE_SIDE_NAV_PLUGINS: Plugin[] = [
 
 /** Marks the editor when no block is selected so CSS can hide the inspector title row (“Page”). */
 function PuckSelectionShell({ children }: { children: React.ReactNode }) {
-  const { selectedItem } = usePuck();
+  const selectedItem = usePuckSelector((s) => s.selectedItem);
   return (
     <div
       id="main-editor"

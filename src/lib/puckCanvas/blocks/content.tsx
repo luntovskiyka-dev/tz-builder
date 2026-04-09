@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import type { ReactNode } from "react";
 import { CardLucidePreview } from "@/lib/puckCanvas/CardLucidePreview";
-import type { RenderDropZoneFn } from "@/lib/puckCanvas/dropZone";
+import type { PuckSlotComponent } from "@/lib/puckCanvas/dropZone";
 import {
   asButtonList,
   asLogosList,
@@ -248,13 +248,12 @@ export function renderCardBlock(props: Record<string, unknown>): ReactNode {
 
 export function renderTemplateBlock(
   props: Record<string, unknown>,
-  renderDropZone: RenderDropZoneFn,
+  Children: PuckSlotComponent | undefined,
 ): ReactNode {
-  const ChildrenSlot = (props as { children?: ((args?: Record<string, unknown>) => ReactNode) | unknown }).children;
   return (
     <section className="rounded-2xl border border-dashed border-border/80 bg-muted/15 p-6">
       <div className="min-h-[120px] rounded-xl border border-dashed border-primary/25 bg-background/70 p-4">
-        {typeof ChildrenSlot === "function" ? ChildrenSlot() : renderDropZone("children")}
+        {Children ? Children() : null}
       </div>
     </section>
   );

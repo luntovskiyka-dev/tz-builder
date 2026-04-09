@@ -1,4 +1,7 @@
-import { usePuck, type Config, type Data } from "@puckeditor/core";
+import { createUsePuck, type Config, type Data } from "@puckeditor/core";
+
+/** Prefer this over `usePuck()` with no args — avoids dev warning and limits re-renders. */
+export const usePuckSelector = createUsePuck();
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { normalizeBlockType } from "@/lib/puckDataToCanvasBlocks";
@@ -124,7 +127,9 @@ function TemplateFieldWithSave(props: Record<string, unknown>) {
   const id = props.id as string | undefined;
   const name = props.name as string | undefined;
 
-  const { dispatch, selectedItem, getSelectorForId } = usePuck();
+  const dispatch = usePuckSelector((s) => s.dispatch);
+  const selectedItem = usePuckSelector((s) => s.selectedItem);
+  const getSelectorForId = usePuckSelector((s) => s.getSelectorForId);
   const storedTemplates = readStoredTemplates();
   const canDeleteTemplate =
     current !== "blank" && !NON_REMOVABLE_TEMPLATE_IDS.has(current) && Boolean(storedTemplates[current]);
@@ -410,7 +415,7 @@ function buildFields(typeId: string): Record<string, unknown> {
   }
 
   if (typeId === "flex") {
-    fields.children = { type: "slot", label: "Items" };
+    fields.children = { type: "slot", label: "Items", disallow: ["hero", "stats"] };
   }
 
   return fields;
@@ -942,18 +947,17 @@ type FieldWithMetadata = {
 };
 
 function useShouldRenderField(field: FieldWithMetadata | null | undefined, id?: string): boolean {
-  const puck = usePuck() as { getItemById?: (id: string) => { props?: Record<string, unknown> } | undefined } | null;
+  const getItemById = usePuckSelector((s) => s.getItemById);
   const metadata = (field?.metadata ?? {}) as {
     visibilityKey?: string;
     visibleWhen?: { key: string; values: string[] };
   };
   if (!metadata.visibilityKey && !metadata.visibleWhen) return true;
   if (!id) return true;
-  if (!puck || typeof puck.getItemById !== "function") return true;
 
   let item: { props?: Record<string, unknown> } | undefined;
   try {
-    item = puck.getItemById(id);
+    item = getItemById(id);
   } catch {
     // Puck store may be transiently unavailable during mount/reload.
     return true;
@@ -976,7 +980,7 @@ function BaseFieldType(props: { field: FieldWithMetadata; id?: string; children?
 
 /** Right inspector: show fields only when a block is selected; empty canvas → empty panel (see Dashboard `PuckSelectionShell` + globals.css). */
 function InspectorFieldsWhenSelected({ children }: { children: ReactNode }) {
-  const { selectedItem } = usePuck();
+  const selectedItem = usePuckSelector((s) => s.selectedItem);
   if (!selectedItem) {
     return (
       <div className="relative h-full min-h-[calc(100dvh-10rem)] w-full">
@@ -1000,8 +1004,8 @@ function InspectorFieldsWhenSelected({ children }: { children: ReactNode }) {
 
 /** Single empty-state hint inside the page root (not the Puck preview chrome → avoids duplicate overlays). */
 function RootWithEmptyHint({ children }: { children?: ReactNode }) {
-  const { appState } = usePuck();
-  const isEmpty = (appState.data.content?.length ?? 0) === 0;
+  const contentLength = usePuckSelector((s) => s.appState.data.content?.length ?? 0);
+  const isEmpty = contentLength === 0;
   return (
     <div className="relative isolate flex min-h-full min-h-0 flex-col bg-background">
       {isEmpty && (

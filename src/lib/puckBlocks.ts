@@ -58,6 +58,7 @@ const PUCK_COMPONENTS: Record<string, PuckComponentConfig> = {
       numColumns: 4,
       gap: 24,
       layout: { padding: "0px" },
+      items: [],
     },
     fields: [
       {
@@ -90,6 +91,7 @@ const PUCK_COMPONENTS: Record<string, PuckComponentConfig> = {
       gap: 24,
       wrap: "wrap",
       layout: { padding: "0px" },
+      children: [],
     },
     fields: [
       {
