@@ -253,6 +253,7 @@ export function DashboardLayout({
       setIsLeftSidebarOpen(false);
       setEditorSaveStatus("saved");
       setPuckHydrationKey((k) => k + 1);
+      setProjectsModalOpen(false);
     }
   }, []);
 
