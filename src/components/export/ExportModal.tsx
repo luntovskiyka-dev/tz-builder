@@ -64,6 +64,7 @@ export function ExportModal({
     daily_limit: number;
     remaining_this_month: number;
     monthly_limit: number;
+    ai_available: boolean;
   } | null>(null);
 
   const [quotaUnavailable, setQuotaUnavailable] = useState(false);
@@ -83,6 +84,7 @@ export function ExportModal({
         daily_limit?: number;
         remaining_this_month?: number;
         monthly_limit?: number;
+        ai_available?: boolean;
       };
       setQuota({
         authenticated: d.authenticated ?? false,
@@ -91,6 +93,7 @@ export function ExportModal({
         daily_limit: d.daily_limit ?? 0,
         remaining_this_month: d.remaining_this_month ?? 0,
         monthly_limit: d.monthly_limit ?? 0,
+        ai_available: d.ai_available ?? false,
       });
     } catch {
       setQuotaUnavailable(true);
@@ -101,12 +104,17 @@ export function ExportModal({
     if (isOpen) void fetchQuota();
   }, [isOpen, fetchQuota]);
 
-  const generateDisabled =
+  const humanGenerationDisabled =
+    isGenerating ||
+    quotaUnavailable ||
+    (quota !== null && quota.authenticated && quota.remaining_today <= 0);
+
+  const aiGenerationDisabled =
     isGenerating ||
     quotaUnavailable ||
     (quota !== null &&
       quota.authenticated &&
-      quota.remaining_today <= 0);
+      (!quota.ai_available || quota.remaining_today <= 0));
 
   const [specMode, setSpecMode] = useState<"human" | "ai">("human");
 
@@ -351,7 +359,7 @@ export function ExportModal({
                 setSpecMode("human");
                 handleGenerateAI("human");
               }}
-              disabled={generateDisabled}
+              disabled={humanGenerationDisabled}
               className="flex-1"
             >
               {isGenerating && specMode === "human" ? (
@@ -372,7 +380,7 @@ export function ExportModal({
                 setSpecMode("ai");
                 handleGenerateAI("ai");
               }}
-              disabled={generateDisabled}
+              disabled={aiGenerationDisabled}
               className="flex-1"
             >
               {isGenerating && specMode === "ai" ? (
@@ -396,9 +404,13 @@ export function ExportModal({
           )}
           {!quotaUnavailable && quota && quota.authenticated && (
             <p className="text-center text-[11px] text-muted-foreground">
-              {quota.remaining_today > 0
-                ? `Осталось ${quota.remaining_today} из ${quota.daily_limit} генераций сегодня (план: ${quota.plan})`
-                : `Дневной лимит исчерпан: ${quota.daily_limit} генерации в сутки. Попробуйте завтра.`}
+              {!quota.ai_available
+                ? quota.remaining_today > 0
+                  ? `На плане ${quota.plan}: доступна только «Для человека» (${quota.remaining_today} из ${quota.daily_limit} на сегодня).`
+                  : `На плане ${quota.plan}: лимит «Для человека» исчерпан (${quota.daily_limit}/сутки). Попробуйте завтра.`
+                : quota.remaining_today > 0
+                  ? `Осталось ${quota.remaining_today} из ${quota.daily_limit} генераций сегодня (план: ${quota.plan})`
+                  : `Дневной лимит исчерпан: ${quota.daily_limit} генерации в сутки. Попробуйте завтра.`}
             </p>
           )}
 

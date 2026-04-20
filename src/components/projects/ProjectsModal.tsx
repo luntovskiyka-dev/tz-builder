@@ -17,6 +17,8 @@ interface ProjectsModalProps {
   onClose: () => void;
   projectsList: ProjectListItem[];
   currentProjectId: string | null;
+  /** Slug плана (например `starter`); при Starter и уже существующем проекте второй создать нельзя. */
+  currentPlanSlug?: string | null;
   handleSelectProject: (projectId: string) => void;
   openNewProjectDialog: () => void;
   openRenameProjectDialog: () => void;
@@ -30,6 +32,7 @@ export function ProjectsModal({
   onClose,
   projectsList,
   currentProjectId,
+  currentPlanSlug,
   handleSelectProject,
   openNewProjectDialog,
   openRenameProjectDialog,
@@ -39,6 +42,10 @@ export function ProjectsModal({
 }: ProjectsModalProps) {
   const projectsLoading = useEditorProjectsLoading();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
+
+  const plan = (currentPlanSlug ?? "starter").toLowerCase();
+  /** На Starter разрешён один активный проект в облаке; при уже открытом проекте второй не создать. */
+  const starterCannotCreateProject = plan === "starter" && currentProjectId != null;
 
   const currentProjectName =
     projectsList.find((project) => String(project.id) === String(currentProjectId))?.name?.trim() ||
@@ -95,16 +102,24 @@ export function ProjectsModal({
 
             {/* Action Buttons */}
             <div className="space-y-2 border-t border-border/70 pt-4">
+              {starterCannotCreateProject && (
+                <p className="rounded-md border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-xs text-amber-950 dark:text-amber-100">
+                  На тарифе Starter доступен один проект. Пока открыт текущий проект, создать ещё один
+                  нельзя — удалите этот проект или перейдите на тариф с несколькими проектами.
+                </p>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => {
+                    if (starterCannotCreateProject) return;
                     openNewProjectDialog();
                     onClose();
                   }}
-                  className="w-full justify-start gap-2"
+                  disabled={starterCannotCreateProject}
+                  className="w-full justify-start gap-2 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Plus className="h-4 w-4" />
                   Создать проект

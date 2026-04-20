@@ -45,11 +45,12 @@ const PLANS: Plan[] = [
     name: "Starter",
     price: "0 ₽",
     priceLabel: "Бесплатно",
-    description: "Для знакомства с платформой",
+    description: "Бесплатно: один проект, ТЗ для команды",
     features: [
-      "2 AI генерации/день",
-      "1 активный проект",
-      "12 базовых блоков",
+      "1 генерация ТЗ «Для человека» в сутки",
+      "Режим «Для ИИ» — только на платных тарифах",
+      "1 активный проект в облаке",
+      "12+ базовых блоков",
       "Облачное хранение",
     ],
     ctaLabel: "Текущий план",
@@ -59,15 +60,15 @@ const PLANS: Plan[] = [
     id: "project",
     slug: "project",
     name: "Project",
-    price: "490 ₽",
+    price: "290 ₽",
     priceLabel: "Разовый платеж",
-    description: "Одно полное ТЗ с правками",
+    description: "Разово: ТЗ, промпт для ИИ по странице",
     features: [
-      "1 полное ТЗ",
-      "7 дней правок",
-      "PDF экспорт",
-      "Cursor prompt",
-      "Безлимит блоков",
+      "ТЗ для людей и структурированное ТЗ для ИИ-агента",
+      "Промпт для Cursor и других ассистентов по блокам страницы",
+      "Безлимит блоков в редакторе",
+      "Облачное хранение проекта",
+      "Один платёж — без ежемесячной подписки",
     ],
     ctaLabel: "Купить Project",
     ctaVariant: "default",
@@ -78,13 +79,13 @@ const PLANS: Plan[] = [
     name: "Pro",
     price: "990 ₽",
     priceLabel: "/месяц",
-    description: "Для профессиональных разработчиков",
+    description: "Оба формата ТЗ, безлимит проектов",
     features: [
-      "30 AI генераций/мес",
+      "До 10 генераций в сутки и до 30 в месяц на каждый формат ТЗ",
       "Безлимит проектов",
-      "Приоритетный AI",
-      "PDF/Word экспорт",
-      "Все блоки",
+      "Приоритетная обработка запросов",
+      "PDF/Word экспорт (в разработке)",
+      "ИИ ассистент (в разработке)",
     ],
     highlight: true,
     badge: "Популярный",
@@ -97,14 +98,14 @@ const PLANS: Plan[] = [
     name: "Studio",
     price: "4 990 ₽",
     priceLabel: "/месяц",
-    description: "Для команд и студий",
+    description: "Для команд: выше лимиты и места",
     features: [
-      "50 AI генераций/мес",
+      "До 20 генераций в сутки и до 50 в месяц на каждый формат ТЗ",
       "10 мест в команде",
       "Общие шаблоны",
       "Приоритетная поддержка",
       "Командная работа",
-      "Все фичи Pro",
+      "Все возможности Pro",
     ],
     badge: "В разработке",
     ctaLabel: "14 дней бесплатно",
@@ -184,8 +185,9 @@ export function PricingPage({ user }: PricingPageProps) {
             </h1>
           </div>
           <p className="mx-auto max-w-2xl text-base text-muted-foreground">
-            Выберите план, который подходит именно вам. Начните бесплатно или
-            откройте все возможности с подпиской Pro или Studio.
+            Выберите план: на Starter — одна генерация ТЗ для команды в сутки;
+            режим «Для ИИ» и расширенные лимиты — на платных тарифах и в
+            подписках Pro и Studio.
           </p>
           {isTrialing && (
             <p className="mt-3 text-sm font-medium text-amber-600">
@@ -249,17 +251,17 @@ export function PricingPage({ user }: PricingPageProps) {
                   <h3 className="text-lg font-semibold text-foreground">
                     {plan.name}
                   </h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
+                  <p className="mt-1 min-h-[2.75rem] text-sm leading-snug text-muted-foreground">
                     {plan.description}
                   </p>
                 </div>
 
-                {/* Price */}
-                <div className="mb-4 flex items-baseline gap-1">
-                  <span className="text-2xl font-bold text-foreground">
+                {/* Price: column so amount + label fit narrow cards */}
+                <div className="mb-4 flex min-w-0 flex-col items-start gap-0.5">
+                  <span className="text-2xl font-bold leading-none tracking-tight text-foreground tabular-nums whitespace-nowrap">
                     {plan.price}
                   </span>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm leading-snug text-muted-foreground">
                     {plan.priceLabel}
                   </span>
                 </div>
@@ -332,8 +334,8 @@ export function PricingPage({ user }: PricingPageProps) {
                 Как работает пробный период?
               </p>
               <p>
-                14 дней бесплатного использования всех функций плана Pro или
-                Studio. Карта не требуется.
+                14 дней бесплатного доступа к лимитам и функциям Pro или Studio
+                (включая генерацию ТЗ «Для ИИ»). Карта не требуется.
               </p>
             </div>
             <div>
@@ -341,8 +343,9 @@ export function PricingPage({ user }: PricingPageProps) {
                 Что такое Project?
               </p>
               <p>
-                Разовый платеж 490₽ за создание одного полного ТЗ с 7 днями
-                правок.
+                Разовый платёж 290 ₽: тариф Project — генерация ТЗ и готовый
+                промпт для ИИ-разработки по структуре ваших блоков, без
+                подписки.
               </p>
             </div>
             <div>

@@ -43,6 +43,7 @@ export async function GET() {
       used_this_month?: number;
       monthly_limit?: number;
       remaining_this_month?: number;
+      ai_available?: boolean;
     };
 
     return NextResponse.json({
@@ -54,6 +55,7 @@ export async function GET() {
       used_this_month: quota.used_this_month ?? 0,
       monthly_limit: quota.monthly_limit ?? 0,
       remaining_this_month: quota.remaining_this_month ?? 0,
+      ai_available: quota.ai_available ?? false,
     });
   } catch (e) {
     console.error("GET generate-spec quota:", e);

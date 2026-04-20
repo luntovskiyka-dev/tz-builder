@@ -28,12 +28,26 @@ import {
   puckOverrides,
   usePuckSelector,
 } from "@/lib/puckEditor";
+import { AI_ASSISTANT_PUCK_DATA } from "@/lib/aiAssistantLanding";
+import { APP_LAUNCH_PUCK_DATA } from "@/lib/appLaunchLanding";
+import { ECOMMERCE_PRODUCT_PUCK_DATA } from "@/lib/ecommerceProductLanding";
 import { EVENT_CONFERENCE_PUCK_DATA } from "@/lib/eventConferenceLanding";
+import { LOCAL_SERVICE_PUCK_DATA } from "@/lib/localServiceLanding";
+import { MEDICAL_WELLNESS_PUCK_DATA } from "@/lib/medicalWellnessLanding";
+import { ONLINE_COURSE_PUCK_DATA } from "@/lib/onlineCourseLanding";
+import { REAL_ESTATE_PUCK_DATA } from "@/lib/realEstateLanding";
 import { SAAS_UNIVERSAL_PUCK_DATA } from "@/lib/saasUniversalLanding";
 import { STUDIO_BRAND_PUCK_DATA } from "@/lib/studioBrandLanding";
 import {
+  AI_ASSISTANT_TEMPLATE_PROJECT_NAME,
+  APP_LAUNCH_TEMPLATE_PROJECT_NAME,
+  ECOMMERCE_PRODUCT_TEMPLATE_PROJECT_NAME,
   EVENT_CONFERENCE_TEMPLATE_PROJECT_NAME,
+  LOCAL_SERVICE_TEMPLATE_PROJECT_NAME,
+  MEDICAL_WELLNESS_TEMPLATE_PROJECT_NAME,
+  ONLINE_COURSE_TEMPLATE_PROJECT_NAME,
   PORTFOLIO_SERVICES_TEMPLATE_PROJECT_NAME,
+  REAL_ESTATE_TEMPLATE_PROJECT_NAME,
   SAAS_TEMPLATE_PROJECT_NAME,
 } from "@/lib/saasTemplateMeta";
 import { LeftSidebar } from "@/components/dashboard/LeftSidebar";
@@ -424,7 +438,10 @@ export function DashboardLayout({
         autosaveTimeoutRef.current = null;
       }
 
-      if (currentProjectId) {
+      const planSlug = (user?.plan ?? "starter").toLowerCase();
+      const starterApplyTemplateInPlace = planSlug === "starter" && currentProjectId != null;
+
+      if (currentProjectId && !starterApplyTemplateInPlace) {
         setEditorSaveStatus("saving");
         const formData = new FormData();
         formData.set("name", projectNameForSave());
@@ -454,6 +471,38 @@ export function DashboardLayout({
       const signature = JSON.stringify(blocks);
 
       setEditorSaveStatus("saving");
+
+      if (starterApplyTemplateInPlace) {
+        const updateFd = new FormData();
+        updateFd.set("name", projectName);
+        updateFd.set("blocks", JSON.stringify(blocks));
+        updateFd.set("projectId", String(currentProjectId));
+        const updateResult = await saveProjectAction(null, updateFd);
+        if (updateResult.error) {
+          setEditorSaveStatus("error");
+          setDeleteError(updateResult.error ?? "Не удалось применить шаблон");
+          return;
+        }
+        const id = String(currentProjectId);
+        setPuckData(data);
+        latestBlocksRef.current = blocks;
+        latestSignatureRef.current = signature;
+        lastSavedSignatureRef.current = signature;
+        setCanvasBlocks(blocks);
+        setCurrentProjectSpec(null);
+        setProjectsList((prev) =>
+          prev.map((p) =>
+            String(p.id) === id
+              ? { ...p, name: projectName, updated_at: new Date().toISOString() }
+              : p,
+          ),
+        );
+        setPuckHydrationKey((k) => k + 1);
+        setEditorSaveStatus("saved");
+        setDeleteError(null);
+        return;
+      }
+
       const createFd = new FormData();
       createFd.set("name", projectName);
       createFd.set("blocks", JSON.stringify(blocks));
@@ -478,8 +527,9 @@ export function DashboardLayout({
       ]);
       setPuckHydrationKey((k) => k + 1);
       setEditorSaveStatus("saved");
+      setDeleteError(null);
     },
-    [currentProjectId, projectNameForSave],
+    [currentProjectId, projectNameForSave, user?.plan],
   );
 
   const handleApplySaaSTemplate = useCallback(async () => {
@@ -495,6 +545,34 @@ export function DashboardLayout({
 
   const handleApplyPortfolioServicesTemplate = useCallback(async () => {
     await applyProjectTemplate(PORTFOLIO_SERVICES_TEMPLATE_PROJECT_NAME, STUDIO_BRAND_PUCK_DATA);
+  }, [applyProjectTemplate]);
+
+  const handleApplyOnlineCourseTemplate = useCallback(async () => {
+    await applyProjectTemplate(ONLINE_COURSE_TEMPLATE_PROJECT_NAME, ONLINE_COURSE_PUCK_DATA);
+  }, [applyProjectTemplate]);
+
+  const handleApplyEcommerceProductTemplate = useCallback(async () => {
+    await applyProjectTemplate(ECOMMERCE_PRODUCT_TEMPLATE_PROJECT_NAME, ECOMMERCE_PRODUCT_PUCK_DATA);
+  }, [applyProjectTemplate]);
+
+  const handleApplyAppLaunchTemplate = useCallback(async () => {
+    await applyProjectTemplate(APP_LAUNCH_TEMPLATE_PROJECT_NAME, APP_LAUNCH_PUCK_DATA);
+  }, [applyProjectTemplate]);
+
+  const handleApplyAiAssistantTemplate = useCallback(async () => {
+    await applyProjectTemplate(AI_ASSISTANT_TEMPLATE_PROJECT_NAME, AI_ASSISTANT_PUCK_DATA);
+  }, [applyProjectTemplate]);
+
+  const handleApplyRealEstateTemplate = useCallback(async () => {
+    await applyProjectTemplate(REAL_ESTATE_TEMPLATE_PROJECT_NAME, REAL_ESTATE_PUCK_DATA);
+  }, [applyProjectTemplate]);
+
+  const handleApplyMedicalWellnessTemplate = useCallback(async () => {
+    await applyProjectTemplate(MEDICAL_WELLNESS_TEMPLATE_PROJECT_NAME, MEDICAL_WELLNESS_PUCK_DATA);
+  }, [applyProjectTemplate]);
+
+  const handleApplyLocalServiceTemplate = useCallback(async () => {
+    await applyProjectTemplate(LOCAL_SERVICE_TEMPLATE_PROJECT_NAME, LOCAL_SERVICE_PUCK_DATA);
   }, [applyProjectTemplate]);
 
   const dashboardOverrides = useMemo(
@@ -697,7 +775,7 @@ export function DashboardLayout({
           subscriptionStatus: user?.subscriptionStatus ?? "none",
           trialEndsAt: user?.trialEndsAt ?? null,
           subscriptionEndsAt: user?.subscriptionEndsAt ?? null,
-          aiGenerationsPerDay: 2,
+          aiGenerationsPerDay: 1,
           aiGenerationsPerMonth: 0,
         }}
         quota={{
@@ -714,6 +792,7 @@ export function DashboardLayout({
         onClose={() => setProjectsModalOpen(false)}
         projectsList={projectsList}
         currentProjectId={currentProjectId}
+        currentPlanSlug={user?.plan ?? "starter"}
         handleSelectProject={handleSelectProject}
         openNewProjectDialog={openNewProjectDialog}
         openRenameProjectDialog={openRenameProjectDialog}
@@ -724,9 +803,18 @@ export function DashboardLayout({
       <TemplatesModal
         isOpen={templatesModalOpen}
         onClose={() => setTemplatesModalOpen(false)}
+        currentPlanSlug={user?.plan ?? "starter"}
+        currentProjectId={currentProjectId}
         onApplySaaSTemplate={handleApplySaaSTemplate}
         onApplyEventConferenceTemplate={handleApplyEventConferenceTemplate}
         onApplyPortfolioServicesTemplate={handleApplyPortfolioServicesTemplate}
+        onApplyOnlineCourseTemplate={handleApplyOnlineCourseTemplate}
+        onApplyEcommerceProductTemplate={handleApplyEcommerceProductTemplate}
+        onApplyAppLaunchTemplate={handleApplyAppLaunchTemplate}
+        onApplyAiAssistantTemplate={handleApplyAiAssistantTemplate}
+        onApplyRealEstateTemplate={handleApplyRealEstateTemplate}
+        onApplyMedicalWellnessTemplate={handleApplyMedicalWellnessTemplate}
+        onApplyLocalServiceTemplate={handleApplyLocalServiceTemplate}
       />
       <ExportModal
         blocks={canvasBlocks}

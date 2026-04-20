@@ -264,7 +264,7 @@ export async function cancelSubscriptionWithYooKassaAction(): Promise<{
 }
 
 // =====================================================
-// Создание разового платежа (Project — 490₽)
+// Создание разового платежа (Project — 290₽)
 // =====================================================
 export async function createOneTimePaymentAction(
   planSlug: string,

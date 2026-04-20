@@ -257,7 +257,8 @@ export async function POST(req: NextRequest) {
     // Если billing-таблицы ещё не созданы (миграция не применена),
     // разрешаем генерацию с дефолтными лимитами Starter.
     const { data: quotaData, error: quotaError } = await supabase.rpc(
-      "try_consume_spec_generation"
+      "try_consume_spec_generation",
+      { p_mode: specMode }
     );
 
     let quota: {
@@ -284,7 +285,9 @@ export async function POST(req: NextRequest) {
       const planName = quota.plan || 'Starter';
       let errorMessage = "Достигнут лимит генераций ТЗ.";
       
-      if (quota.reason === 'daily_limit_exceeded') {
+      if (quota.reason === 'ai_not_available_for_plan') {
+        errorMessage = "Генерация «Для ИИ» доступна только на платных тарифах.";
+      } else if (quota.reason === 'daily_limit_exceeded') {
         errorMessage = `Достигнут дневной лимит: ${quota.used_today} из ${quota.daily_limit} генераций сегодня. Попробуйте завтра.`;
       } else if (quota.reason === 'monthly_limit_exceeded') {
         errorMessage = `Достигнут месячный лимит: ${quota.used_this_month} из ${quota.monthly_limit} генераций в этом месяце. Рассмотрите апгрейд тарифа.`;

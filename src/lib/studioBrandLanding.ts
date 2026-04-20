@@ -12,72 +12,100 @@ export const STUDIO_BRAND_LANDING_BLOCKS: CanvasBlock[] = [
     id: "sb-hdr",
     type: "header",
     props: {
-      logoText: "Объём",
+      logoText: "Northframe",
       logoImageUrl: "",
       logoHref: "/",
       navItems: [
-        { label: "Работы", href: "#work", variant: "secondary" },
+        { label: "Кейсы", href: "#work", variant: "secondary" },
         { label: "Услуги", href: "#services", variant: "secondary" },
+        { label: "Пакеты", href: "#packages", variant: "secondary" },
         { label: "Процесс", href: "#process", variant: "secondary" },
-        { label: "Контакты", href: "#contact", variant: "secondary" },
+        { label: "FAQ", href: "#faq", variant: "secondary" },
       ],
-      behavior: "static",
-      ctaLabel: "Обсудить проект",
+      behavior: "sticky",
+      ctaLabel: "Бриф за 5 минут",
       ctaHref: "#contact",
       alignNav: "center",
       showMobileMenu: true,
     },
   },
 
-  { id: "sb-sp-1", type: "space", props: { size: "32px", direction: "vertical" } },
+  { id: "sb-sp-1", type: "space", props: { size: "28px", direction: "vertical" } },
 
   {
-    id: "sb-hero-center",
+    id: "sb-hero-main",
     type: "hero",
     props: {
-      title: "Студия визуальных решений для брендов с характером",
+      title: "Делаем бренды и сайты, которые выглядят дорого и продают в первый экран",
       description:
-        "<p>Стратегия, айдентика, сайты и презентации. Работаем с командами основателей и маркетинга — от первого брифа до гайдлайна.</p><p>Фокус на узнаваемости и спокойной премиальности, без визуального шума.</p>",
+        "<p>Northframe — студия брендинга и digital-дизайна для B2B и lifestyle-компаний. Собираем систему: позиционирование, айдентика, сайт и контент-носители в едином визуальном языке.</p><p>Запуск от 3 недель, прозрачный scope и понятные этапы.</p>",
       quote:
-        "«Каждый проект — это голос бренда, который считывается в первые секунды.» — креативный директор студии",
-      align: "center",
+        "«После обновления бренда и сайта входящие лиды выросли на 37% за два месяца» — маркетинг-директор клиента",
+      align: "left",
       buttons: [
-        { label: "Смотреть работы", href: "#work", variant: "primary" },
-        { label: "Услуги", href: "#services", variant: "secondary" },
-        { label: "Связаться", href: "#contact", variant: "secondary" },
+        { label: "Смотреть кейсы", href: "#work", variant: "primary" },
+        { label: "Открыть услуги", href: "#services", variant: "secondary" },
+        { label: "Запросить оценку", href: "#contact", variant: "secondary" },
       ],
       image: { url: "", mode: "inline", content: [] },
       padding: "80px",
     },
   },
 
-  { id: "sb-sp-2", type: "space", props: { size: "48px", direction: "both" } },
+  { id: "sb-sp-2", type: "space", props: { size: "44px", direction: "both" } },
 
   {
-    id: "sb-h-brand-xl",
+    id: "sb-h-trust",
     type: "heading",
     props: {
-      text: "Объём",
-      size: "xxxl",
-      level: "",
+      text: "Работали с продуктовыми командами и сервисными бизнесами",
+      size: "s",
+      level: "h4",
       align: "center",
-      layout: { padding: "16px" },
-    },
-  },
-  {
-    id: "sb-t-lead",
-    type: "text",
-    props: {
-      text: "Небольшая команда, короткие сроки, внимание к деталям. Не делаем «универсальные шаблоны» — собираем систему под ваш контекст.",
-      size: "m",
-      align: "center",
-      color: "muted",
-      maxWidth: "640px",
       layout: { padding: "8px" },
     },
   },
+  {
+    id: "sb-logos",
+    type: "logos",
+    props: {
+      logos: [
+        {
+          alt: "Northgrid",
+          imageUrl: "https://placehold.co/200x48/0c0a09/e7e5e4/png?text=Northgrid",
+        },
+        {
+          alt: "Pulse AI",
+          imageUrl: "https://placehold.co/200x48/1c1917/d6d3d1/png?text=Pulse+AI",
+        },
+        {
+          alt: "Atlas Pro",
+          imageUrl: "https://placehold.co/200x48/292524/a8a29e/png?text=Atlas+Pro",
+        },
+        {
+          alt: "Fieldone",
+          imageUrl: "https://placehold.co/200x48/134e4a/99f6e4/png?text=Fieldone",
+        },
+      ],
+    },
+  },
 
-  { id: "sb-sp-3", type: "space", props: { size: "64px", direction: "vertical" } },
+  { id: "sb-sp-3", type: "space", props: { size: "40px", direction: "vertical" } },
+
+  {
+    id: "sb-stats",
+    type: "stats",
+    props: {
+      items: [
+        { title: "120+", description: "проектов за 6 лет" },
+        { title: "3-8 недель", description: "средний цикл запуска" },
+        { title: "4.9/5", description: "оценка клиентов по итогам проекта" },
+        { title: "70%", description: "проектов приходят по рекомендации" },
+      ],
+    },
+  },
+
+  { id: "sb-sp-3b", type: "space", props: { size: "56px", direction: "vertical" } },
 
   {
     id: "sb-h-services",
@@ -94,7 +122,7 @@ export const STUDIO_BRAND_LANDING_BLOCKS: CanvasBlock[] = [
     id: "sb-t-services-lead",
     type: "text",
     props: {
-      text: "Три типовых направления — их можно комбинировать или взять точечно.",
+      text: "Работаем пакетно: можно взять отдельный модуль или полный цикл от стратегии до запуска.",
       size: "s",
       align: "center",
       color: "default",
@@ -116,9 +144,9 @@ export const STUDIO_BRAND_LANDING_BLOCKS: CanvasBlock[] = [
     id: "sb-card-svc-1",
     type: "card",
     props: {
-      title: "Стратегия и позиционирование",
+      title: "Бренд-стратегия",
       description:
-        "Исследование аудитории, конкурентный ландшафт, платформа бренда и тон коммуникации.",
+        "Аудит рынка, позиционирование, архетип, tone of voice и смысловая платформа бренда.",
       icon: "Lightbulb",
       mode: "card",
       layout: { padding: "0px" },
@@ -130,9 +158,9 @@ export const STUDIO_BRAND_LANDING_BLOCKS: CanvasBlock[] = [
     id: "sb-card-svc-2",
     type: "card",
     props: {
-      title: "Визуальная система и сайт",
+      title: "Айдентика и сайт",
       description:
-        "Логотип, типографика, UI-кит, адаптивный сайт и материалы для соцсетей.",
+        "Логотип, визуальная система, UI-kit, лендинг или многостраничный сайт с адаптивом.",
       icon: "Sparkles",
       mode: "flat",
       layout: { padding: "0px" },
@@ -144,9 +172,9 @@ export const STUDIO_BRAND_LANDING_BLOCKS: CanvasBlock[] = [
     id: "sb-card-svc-3",
     type: "card",
     props: {
-      title: "Контент и презентации",
-      description: "Сценарии, копирайт, кейсы для инвесторов и питч-деки под ключ.",
-      icon: "LayoutGrid",
+      title: "Контент и поддержка",
+      description: "Шаблоны для маркетинга, презентации, дизайн-сопровождение и growth-креативы.",
+      icon: "Megaphone",
       mode: "card",
       layout: { padding: "0px" },
       __parentId: "sb-grid-services",
@@ -154,61 +182,81 @@ export const STUDIO_BRAND_LANDING_BLOCKS: CanvasBlock[] = [
     },
   },
 
-  { id: "sb-sp-4", type: "space", props: { size: "48px", direction: "horizontal" } },
+  { id: "sb-sp-4", type: "space", props: { size: "52px", direction: "horizontal" } },
 
   {
-    id: "sb-h-logos",
+    id: "sb-h-packages",
     type: "heading",
     props: {
-      text: "Работали с командами и брендами",
-      size: "s",
-      level: "h4",
+      text: "Пакеты",
+      size: "xl",
+      level: "h2",
       align: "center",
       layout: { padding: "8px" },
     },
   },
-
   {
-    id: "sb-logos",
-    type: "logos",
+    id: "sb-t-packages",
+    type: "text",
     props: {
-      logos: [
-        {
-          alt: "North",
-          imageUrl: "https://placehold.co/200x48/0c0a09/e7e5e4/png?text=North",
-        },
-        {
-          alt: "Field",
-          imageUrl: "https://placehold.co/200x48/1c1917/d6d3d1/png?text=Field",
-        },
-        {
-          alt: "Mono",
-          imageUrl: "https://placehold.co/200x48/292524/a8a29e/png?text=Mono",
-        },
-        {
-          alt: "Atlas",
-          imageUrl: "https://placehold.co/200x48/134e4a/99f6e4/png?text=Atlas",
-        },
-      ],
+      text: "Прозрачные уровни сотрудничества для старта, роста и масштабирования.",
+      size: "m",
+      align: "center",
+      color: "muted",
+      maxWidth: "700px",
+      layout: { padding: "8px" },
+    },
+  },
+  {
+    id: "sb-grid-packages",
+    type: "grid",
+    props: {
+      numColumns: 3,
+      gap: 20,
+      layout: { padding: "28px" },
+    },
+  },
+  {
+    id: "sb-card-pack-1",
+    type: "card",
+    props: {
+      title: "Start",
+      description: "Лендинг + базовая айдентика. Подходит для запуска нового продукта или услуги.",
+      icon: "Flag",
+      mode: "card",
+      layout: { padding: "0px" },
+      __parentId: "sb-grid-packages",
+      __zone: "items",
+    },
+  },
+  {
+    id: "sb-card-pack-2",
+    type: "card",
+    props: {
+      title: "Growth",
+      description: "Бренд-система, сайт, шаблоны и дизайн-поддержка на 2-3 месяца.",
+      icon: "TrendingUp",
+      mode: "flat",
+      layout: { padding: "0px" },
+      __parentId: "sb-grid-packages",
+      __zone: "items",
+    },
+  },
+  {
+    id: "sb-card-pack-3",
+    type: "card",
+    props: {
+      title: "Scale",
+      description: "Полный ребрендинг, multi-page сайт и внедрение дизайн-процессов в команду.",
+      icon: "Rocket",
+      mode: "card",
+      layout: { padding: "0px" },
+      __parentId: "sb-grid-packages",
+      __zone: "items",
     },
   },
 
-  { id: "sb-sp-5", type: "space", props: { size: "56px", direction: "vertical" } },
-
-  {
-    id: "sb-stats",
-    type: "stats",
-    props: {
-      items: [
-        { title: "12+", description: "Лет в индустрии" },
-        { title: "180+", description: "Запусков и релизов" },
-        { title: "24", description: "Наград и отборов" },
-        { title: "8", description: "Стран и часовых поясов" },
-      ],
-    },
-  },
-
-  { id: "sb-sp-6", type: "space", props: { size: "40px", direction: "both" } },
+  { id: "sb-sp-5", type: "space", props: { size: "56px", direction: "both" } },
 
   {
     id: "sb-h-process",
@@ -225,9 +273,9 @@ export const STUDIO_BRAND_LANDING_BLOCKS: CanvasBlock[] = [
     id: "sb-t-process-aside",
     type: "text",
     props: {
-      text: "Прозрачные этапы и синхронные созвоны — без «чёрного ящика».",
+      text: "Фиксируем scope заранее и показываем прогресс каждую неделю.",
       size: "s",
-      align: "right",
+      align: "left",
       color: "muted",
       layout: { padding: "8px" },
     },
@@ -239,32 +287,33 @@ export const STUDIO_BRAND_LANDING_BLOCKS: CanvasBlock[] = [
     props: {
       richtext: `<h3 id="process">Как мы ведём проект</h3>
 <ul>
-<li><strong>Бриф и референсы</strong> — фиксируем цели, ограничения и визуальные ориентиры.</li>
-<li><strong>Концепция</strong> — 1–2 направления, созвон с обоснованием.</li>
-<li><strong>Продакшн</strong> — итерации с промежуточными сдачами; финальные файлы и гайдлайн.</li>
+<li><strong>Discovery</strong> — бриф, аудит текущих материалов и формулировка задач бизнеса.</li>
+<li><strong>Концепция</strong> — 1-2 направления, визуальная гипотеза, согласование стиля.</li>
+<li><strong>Production</strong> — дизайн ключевых экранов, тексты, верстка и адаптив.</li>
+<li><strong>Launch</strong> — QA, передача ассетов, документация и рекомендации на рост.</li>
 </ul>
-<p>Дополнительно: сопровождение запуска и обучение команды работе с системой.</p>`,
+<p>На каждом этапе: синхрон, дедлайны и список решений — без сюрпризов в финале.</p>`,
       layout: { padding: "32px" },
     },
   },
 
-  { id: "sb-sp-7", type: "space", props: { size: "24px", direction: "vertical" } },
+  { id: "sb-sp-6", type: "space", props: { size: "32px", direction: "vertical" } },
 
   {
-    id: "sb-hero-bg",
+    id: "sb-hero-case",
     type: "hero",
     props: {
-      title: "Атмосфера студии — часть результата",
+      title: "Кейс: ребрендинг и сайт за 6 недель",
       description:
-        "<p>Мы сознательно ограничиваем число параллельных проектов, чтобы оставаться в контексте и не терять нюансы.</p>",
+        "<p id='work'>Для B2B SaaS-компании обновили позиционирование и сайт. Результат: +41% входящих заявок и -18% стоимость лида через 2 месяца.</p>",
       quote: "",
       align: "left",
       buttons: [
-        { label: "Записаться на созвон", href: "#contact", variant: "primary" },
-        { label: "Портфолио PDF", href: "#work", variant: "secondary" },
+        { label: "Посмотреть портфолио PDF", href: "#portfolio", variant: "primary" },
+        { label: "Обсудить похожий проект", href: "#contact", variant: "secondary" },
       ],
       image: {
-        url: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1600&q=80",
+        url: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=1600&q=80",
         mode: "background",
         content: [],
       },
@@ -272,7 +321,7 @@ export const STUDIO_BRAND_LANDING_BLOCKS: CanvasBlock[] = [
     },
   },
 
-  { id: "sb-sp-8", type: "space", props: { size: "32px", direction: "vertical" } },
+  { id: "sb-sp-7", type: "space", props: { size: "28px", direction: "vertical" } },
 
   {
     id: "sb-hero-custom",
@@ -280,7 +329,7 @@ export const STUDIO_BRAND_LANDING_BLOCKS: CanvasBlock[] = [
     props: {
       title: "Слот для макета или превью",
       description:
-        "<p>Режим custom: сюда можно положить макет из Figma, видео или статичный кадр — без привязки к одному изображению.</p>",
+        "<p>Оставили custom-слот для живого превью: сюда удобно вставить видео-кейс, интерактивный прототип или галерею экранов.</p>",
       quote: "",
       align: "left",
       buttons: [{ label: "Запросить примеры", href: "#contact", variant: "secondary" }],
@@ -296,7 +345,7 @@ export const STUDIO_BRAND_LANDING_BLOCKS: CanvasBlock[] = [
     id: "sb-t-hero-slot",
     type: "text",
     props: {
-      text: "Здесь может быть превью кейса, сетка обложек или встроенный виджет — всё через слот изображения.",
+      text: "Используйте этот слот для реальных материалов: before/after, видео-демо или Figma embed.",
       size: "s",
       align: "center",
       color: "muted",
@@ -306,241 +355,93 @@ export const STUDIO_BRAND_LANDING_BLOCKS: CanvasBlock[] = [
     },
   },
 
-  { id: "sb-sp-9", type: "space", props: { size: "16px", direction: "vertical" } },
+  { id: "sb-sp-8", type: "space", props: { size: "40px", direction: "vertical" } },
 
   {
-    id: "sb-hero-inline",
-    type: "hero",
-    props: {
-      title: "Соберите первый визуальный прототип",
-      description: "<p>Короткий спринт: мудборд, структура сайта и черновой UI. Подходит перед инвестиционным раундом или ребрендингом.</p>",
-      quote: "«За две недели получили понятный фронт для питча» — основатель B2B-стартапа",
-      align: "left",
-      buttons: [
-        { label: "Запросить смету", href: "#contact", variant: "primary" },
-        { label: "Письмо на почту", href: "mailto:hello@example.com", variant: "secondary" },
-      ],
-      image: {
-        url: "https://images.unsplash.com/photo-1558655146-6c990e8a0e4f?w=1400&q=80",
-        mode: "inline",
-        content: [],
-      },
-      padding: "32px",
-    },
-  },
-
-  { id: "sb-sp-10", type: "space", props: { size: "40px", direction: "vertical" } },
-
-  {
-    id: "sb-flex-row",
-    type: "flex",
-    props: {
-      direction: "row",
-      justifyContent: "center",
-      gap: 24,
-      wrap: "wrap",
-      layout: { padding: "32px" },
-    },
-  },
-  {
-    id: "sb-t-flex",
-    type: "text",
-    props: {
-      text: "Нужен паспорт бренда или только сайт? Напишите — предложим состав и сроки.",
-      size: "m",
-      align: "left",
-      color: "muted",
-      layout: { padding: "0px" },
-      __parentId: "sb-flex-row",
-      __zone: "children",
-    },
-  },
-  {
-    id: "sb-btn-flex-1",
-    type: "button",
-    props: {
-      label: "Смотреть услуги",
-      href: "#services",
-      variant: "primary",
-      __parentId: "sb-flex-row",
-      __zone: "children",
-    },
-  },
-  {
-    id: "sb-btn-flex-2",
-    type: "button",
-    props: {
-      label: "Контакты",
-      href: "#contact",
-      variant: "secondary",
-      __parentId: "sb-flex-row",
-      __zone: "children",
-    },
-  },
-
-  { id: "sb-sp-11", type: "space", props: { size: "48px", direction: "vertical" } },
-
-  {
-    id: "sb-flex-col",
-    type: "flex",
-    props: {
-      direction: "column",
-      justifyContent: "start",
-      gap: 20,
-      wrap: "nowrap",
-      layout: { padding: "24px" },
-    },
-  },
-  {
-    id: "sb-h-flex-col",
+    id: "sb-h-faq",
     type: "heading",
     props: {
-      text: "Быстрый старт",
-      size: "l",
-      level: "h3",
+      text: "FAQ",
+      size: "xl",
+      level: "h2",
       align: "left",
-      layout: { padding: "0px" },
-      __parentId: "sb-flex-col",
-      __zone: "children",
-    },
-  },
-  {
-    id: "sb-t-flex-col",
-    type: "text",
-    props: {
-      text: "Ответим в течение 1–2 рабочих дней. Можно приложить ссылку на бриф или референсы.",
-      size: "m",
-      align: "left",
-      color: "default",
-      layout: { padding: "0px" },
-      __parentId: "sb-flex-col",
-      __zone: "children",
-    },
-  },
-  {
-    id: "sb-btn-standalone",
-    type: "button",
-    props: {
-      label: "Написать в Telegram",
-      href: "https://t.me",
-      variant: "secondary",
-      __parentId: "sb-flex-col",
-      __zone: "children",
-    },
-  },
-
-  { id: "sb-sp-12", type: "space", props: { size: "72px", direction: "vertical" } },
-
-  {
-    id: "sb-grid-two",
-    type: "grid",
-    props: {
-      numColumns: 2,
-      gap: 32,
-      layout: { padding: "48px" },
-    },
-  },
-  {
-    id: "sb-card-grid-1",
-    type: "card",
-    props: {
-      title: "Малый бренд",
-      description: "Пакет для старта: логотип, базовые носители и лендинг до 5 экранов.",
-      icon: "Heart",
-      mode: "flat",
-      layout: { padding: "0px" },
-      __parentId: "sb-grid-two",
-      __zone: "items",
-    },
-  },
-  {
-    id: "sb-card-grid-2",
-    type: "card",
-    props: {
-      title: "Рост и масштаб",
-      description: "Расширение системы, многостраничный сайт и шаблоны для команды.",
-      icon: "Rocket",
-      mode: "card",
-      layout: { padding: "0px" },
-      __parentId: "sb-grid-two",
-      __zone: "items",
-    },
-  },
-
-  { id: "sb-sp-13", type: "space", props: { size: "32px", direction: "horizontal" } },
-
-  {
-    id: "sb-flex-start",
-    type: "flex",
-    props: {
-      direction: "row",
-      justifyContent: "start",
-      gap: 20,
-      wrap: "nowrap",
-      layout: { padding: "16px" },
-    },
-  },
-  {
-    id: "sb-t-flex-start",
-    type: "text",
-    props: {
-      text: "Договор и NDA — по запросу до старта работ.",
-      size: "s",
-      align: "left",
-      color: "muted",
-      layout: { padding: "0px" },
-      __parentId: "sb-flex-start",
-      __zone: "children",
-    },
-  },
-  {
-    id: "sb-btn-nda",
-    type: "button",
-    props: {
-      label: "Запросить пример договора",
-      href: "#contact",
-      variant: "secondary",
-      __parentId: "sb-flex-start",
-      __zone: "children",
-    },
-  },
-
-  {
-    id: "sb-h-xs",
-    type: "heading",
-    props: {
-      text: "Работаем по предоплате и этапам — без сюрпризов в конце.",
-      size: "xs",
-      level: "h6",
-      align: "center",
       layout: { padding: "8px" },
     },
   },
+  {
+    id: "sb-rt-faq",
+    type: "richtext",
+    props: {
+      richtext:
+        "<h3 id='faq'>Частые вопросы</h3><p><strong>Сколько длится проект?</strong> Обычно от 3 до 8 недель в зависимости от объема работ.</p><p><strong>Берете ли небольшие задачи?</strong> Да, есть стартовый пакет и формат дизайн-поддержки.</p><p><strong>Есть ли фиксированный бюджет?</strong> На базовые пакеты — да, для кастомных задач готовим детальную смету.</p><p><strong>Что нужно от клиента?</strong> Короткий бриф, доступ к текущим материалам и человек, принимающий решения.</p>",
+      layout: { padding: "24px" },
+    },
+  },
+
+  { id: "sb-sp-9", type: "space", props: { size: "48px", direction: "vertical" } },
 
   {
-    id: "sb-flex-end",
+    id: "sb-hero-final",
+    type: "hero",
+    props: {
+      title: "Готовы собрать бренд и сайт, которые можно запускать без бесконечных правок?",
+      description:
+        "<p id='contact'>Заполните короткий бриф, и мы предложим формат сотрудничества, сроки и бюджет под вашу задачу.</p>",
+      quote: "",
+      align: "left",
+      buttons: [
+        { label: "Заполнить бриф", href: "#contact", variant: "primary" },
+        { label: "Написать в Telegram", href: "https://t.me", variant: "secondary" },
+      ],
+      image: {
+        url: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=1600&q=80",
+        mode: "background",
+        content: [],
+      },
+      padding: "64px",
+    },
+  },
+
+  { id: "sb-sp-10", type: "space", props: { size: "56px", direction: "vertical" } },
+
+  {
+    id: "sb-flex-legal",
     type: "flex",
     props: {
       direction: "row",
-      justifyContent: "end",
+      justifyContent: "start",
       gap: 16,
       wrap: "wrap",
       layout: { padding: "8px" },
     },
   },
   {
-    id: "sb-btn-end",
+    id: "sb-t-legal",
+    type: "text",
+    props: {
+      text: "Работаем по договору, с NDA по запросу и фиксированными этапами оплаты.",
+      size: "s",
+      align: "left",
+      color: "muted",
+      layout: { padding: "0px" },
+      __parentId: "sb-flex-legal",
+      __zone: "children",
+    },
+  },
+  {
+    id: "sb-btn-legal",
     type: "button",
     props: {
-      label: "В начало",
-      href: "#",
-      variant: "primary",
-      __parentId: "sb-flex-end",
+      label: "Запросить NDA",
+      href: "#contact",
+      variant: "secondary",
+      layout: { padding: "0px" },
+      __parentId: "sb-flex-legal",
       __zone: "children",
     },
   },
 
-  { id: "sb-sp-14", type: "space", props: { size: "24px", direction: "vertical" } },
+  { id: "sb-sp-11", type: "space", props: { size: "24px", direction: "vertical" } },
 
   {
     id: "sb-h-prefooter",
@@ -557,7 +458,7 @@ export const STUDIO_BRAND_LANDING_BLOCKS: CanvasBlock[] = [
     id: "sb-h-signoff",
     type: "heading",
     props: {
-      text: "Объём",
+      text: "Northframe",
       size: "xxxl",
       level: "",
       align: "center",
@@ -570,19 +471,19 @@ export const STUDIO_BRAND_LANDING_BLOCKS: CanvasBlock[] = [
     type: "footer",
     props: {
       columns: [
-        { title: "Студия", description: "О команде, подход, вакансии" },
-        { title: "Работы", description: "Кейсы, отрасли, форматы" },
-        { title: "Связь", description: "Почта, календарь, соцсети" },
+        { title: "Услуги", description: "Брендинг, сайты, дизайн-поддержка" },
+        { title: "Кейсы", description: "B2B, SaaS, e-commerce, lifestyle" },
+        { title: "Связь", description: "Бриф, email, Telegram, календарь" },
       ],
-      copyright: "© 2026 Студия «Объём». Все права защищены.",
+      copyright: "© 2026 Northframe Studio. Все права защищены.",
       paddingY: "64px",
       socialLinks: [
         { label: "Telegram", href: "https://t.me", variant: "secondary" },
-        { label: "Behance", href: "https://behance.net", variant: "secondary" },
-        { label: "Почта", href: "mailto:hello@example.com", variant: "primary" },
+        { label: "Dribbble", href: "https://dribbble.com", variant: "secondary" },
+        { label: "Почта", href: "mailto:team@northframe.studio", variant: "primary" },
       ],
       newsletter: true,
-      newsletterPlaceholder: "Email для рассылки и портфолио в PDF",
+      newsletterPlaceholder: "Email для кейсов и свободных слотов",
     },
   },
 ];

@@ -10,26 +10,54 @@ import {
 import { Button } from "@/components/ui/button";
 import { LayoutTemplate } from "lucide-react";
 import {
+  AI_ASSISTANT_TEMPLATE_PROJECT_NAME,
+  APP_LAUNCH_TEMPLATE_PROJECT_NAME,
+  ECOMMERCE_PRODUCT_TEMPLATE_PROJECT_NAME,
   EVENT_CONFERENCE_TEMPLATE_PROJECT_NAME,
+  LOCAL_SERVICE_TEMPLATE_PROJECT_NAME,
+  MEDICAL_WELLNESS_TEMPLATE_PROJECT_NAME,
+  ONLINE_COURSE_TEMPLATE_PROJECT_NAME,
   PORTFOLIO_SERVICES_TEMPLATE_PROJECT_NAME,
+  REAL_ESTATE_TEMPLATE_PROJECT_NAME,
   SAAS_TEMPLATE_PROJECT_NAME,
 } from "@/lib/saasTemplateMeta";
 
 interface TemplatesModalProps {
   isOpen: boolean;
   onClose: () => void;
+  currentPlanSlug?: string | null;
+  currentProjectId?: string | null;
   onApplySaaSTemplate: () => void;
   onApplyEventConferenceTemplate: () => void;
   onApplyPortfolioServicesTemplate: () => void;
+  onApplyOnlineCourseTemplate: () => void;
+  onApplyEcommerceProductTemplate: () => void;
+  onApplyAppLaunchTemplate: () => void;
+  onApplyAiAssistantTemplate: () => void;
+  onApplyRealEstateTemplate: () => void;
+  onApplyMedicalWellnessTemplate: () => void;
+  onApplyLocalServiceTemplate: () => void;
 }
 
 export function TemplatesModal({
   isOpen,
   onClose,
+  currentPlanSlug,
+  currentProjectId,
   onApplySaaSTemplate,
   onApplyEventConferenceTemplate,
   onApplyPortfolioServicesTemplate,
+  onApplyOnlineCourseTemplate,
+  onApplyEcommerceProductTemplate,
+  onApplyAppLaunchTemplate,
+  onApplyAiAssistantTemplate,
+  onApplyRealEstateTemplate,
+  onApplyMedicalWellnessTemplate,
+  onApplyLocalServiceTemplate,
 }: TemplatesModalProps) {
+  const plan = (currentPlanSlug ?? "starter").toLowerCase();
+  const starterWithOpenProject = plan === "starter" && currentProjectId != null;
+
   const templates = [
     {
       name: SAAS_TEMPLATE_PROJECT_NAME,
@@ -42,6 +70,34 @@ export function TemplatesModal({
     {
       name: PORTFOLIO_SERVICES_TEMPLATE_PROJECT_NAME,
       onClick: onApplyPortfolioServicesTemplate,
+    },
+    {
+      name: ONLINE_COURSE_TEMPLATE_PROJECT_NAME,
+      onClick: onApplyOnlineCourseTemplate,
+    },
+    {
+      name: ECOMMERCE_PRODUCT_TEMPLATE_PROJECT_NAME,
+      onClick: onApplyEcommerceProductTemplate,
+    },
+    {
+      name: APP_LAUNCH_TEMPLATE_PROJECT_NAME,
+      onClick: onApplyAppLaunchTemplate,
+    },
+    {
+      name: AI_ASSISTANT_TEMPLATE_PROJECT_NAME,
+      onClick: onApplyAiAssistantTemplate,
+    },
+    {
+      name: REAL_ESTATE_TEMPLATE_PROJECT_NAME,
+      onClick: onApplyRealEstateTemplate,
+    },
+    {
+      name: MEDICAL_WELLNESS_TEMPLATE_PROJECT_NAME,
+      onClick: onApplyMedicalWellnessTemplate,
+    },
+    {
+      name: LOCAL_SERVICE_TEMPLATE_PROJECT_NAME,
+      onClick: onApplyLocalServiceTemplate,
     },
   ];
 
@@ -75,7 +131,9 @@ export function TemplatesModal({
               ))}
             </ul>
             <p className="text-xs leading-snug text-muted-foreground">
-              Сохраняет текущий проект и создаёт новый проект с выбранным лендингом.
+              {starterWithOpenProject
+                ? "На тарифе Starter шаблон подставляется в текущий проект (второй проект не создаётся)."
+                : "Сохраняет текущий проект и создаёт новый проект с выбранным лендингом."}
             </p>
           </div>
         </div>
