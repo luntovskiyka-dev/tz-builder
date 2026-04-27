@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Puck, type Data, type Plugin, type UiState } from "@puckeditor/core";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -62,6 +62,7 @@ import { ProjectsModal } from "@/components/projects/ProjectsModal";
 import { TemplatesModal } from "@/components/templates/TemplatesModal";
 import { ExportModal } from "@/components/export/ExportModal";
 import { Button } from "@/components/ui/button";
+import type { DashboardProjectBootstrap } from "@/lib/projects/dashboardBootstrap";
 
 /**
  * Hide Puck’s Blocks/Outline side nav (`Puck--hidePlugins`) and the built-in left drawer;
@@ -113,16 +114,37 @@ type DashboardLayoutPreview = {
 export function DashboardLayout({
   user,
   preview,
+  projectBootstrap,
 }: {
   user?: DashboardLayoutUser;
   preview?: DashboardLayoutPreview;
+  /** When set (dashboard RSC), skips client loadProjects + loadProject waterfall. */
+  projectBootstrap?: DashboardProjectBootstrap;
 }) {
-  const [canvasBlocks, setCanvasBlocks] = useState<CanvasBlock[]>([]);
-  const [puckData, setPuckData] = useState<Partial<Data>>({ content: [], root: { props: { title: "" } } });
-  const [isInitialHydrationDone, setIsInitialHydrationDone] = useState(false);
-  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
-  const [currentProjectSpec, setCurrentProjectSpec] = useState<string | null>(null);
-  const [projectsList, setProjectsList] = useState<ProjectListItem[]>([]);
+  const [canvasBlocks, setCanvasBlocks] = useState<CanvasBlock[]>(() => {
+    if (projectBootstrap?.activeProject?.blocks) {
+      return projectBootstrap.activeProject.blocks as CanvasBlock[];
+    }
+    return [];
+  });
+  const [puckData, setPuckData] = useState<Partial<Data>>(() => {
+    if (projectBootstrap?.activeProject?.blocks) {
+      return canvasBlocksToPuckData(projectBootstrap.activeProject.blocks as CanvasBlock[]);
+    }
+    return { content: [], root: { props: { title: "" } } };
+  });
+  const [isInitialHydrationDone, setIsInitialHydrationDone] = useState(
+    () => projectBootstrap !== undefined,
+  );
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(() =>
+    projectBootstrap?.activeProject ? String(projectBootstrap.activeProject.id) : null,
+  );
+  const [currentProjectSpec, setCurrentProjectSpec] = useState<string | null>(
+    () => projectBootstrap?.activeProject?.spec ?? null,
+  );
+  const [projectsList, setProjectsList] = useState<ProjectListItem[]>(
+    () => projectBootstrap?.projects ?? [],
+  );
   const [projectNameDialogOpen, setProjectNameDialogOpen] = useState(false);
   const [projectNameDialogMode, setProjectNameDialogMode] = useState<"create" | "rename">("create");
   const [newProjectName, setNewProjectName] = useState("");
@@ -134,7 +156,9 @@ export function DashboardLayout({
   const [templatesModalOpen, setTemplatesModalOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   /** Puck keeps only the first `data` it sees; bump key when hydrating from API so the editor remounts. */
-  const [puckHydrationKey, setPuckHydrationKey] = useState(0);
+  const [puckHydrationKey, setPuckHydrationKey] = useState(() =>
+    projectBootstrap?.activeProject ? 1 : 0,
+  );
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(false);
   const logoutFormRef = useRef<HTMLFormElement>(null);
   const localSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -148,7 +172,26 @@ export function DashboardLayout({
   const userEmail = user?.email?.trim() || "no-email@example.com";
   const avatarUrl = user?.avatarUrl?.trim() || "/images/avatar-placeholder.svg";
 
+  useLayoutEffect(() => {
+    if (projectBootstrap === undefined) return;
+    if (projectBootstrap.activeProject) {
+      const loadedBlocks = projectBootstrap.activeProject.blocks as CanvasBlock[];
+      latestBlocksRef.current = loadedBlocks;
+      const signature = JSON.stringify(loadedBlocks);
+      latestSignatureRef.current = signature;
+      lastSavedSignatureRef.current = signature;
+    } else {
+      latestBlocksRef.current = [];
+      latestSignatureRef.current = "[]";
+      lastSavedSignatureRef.current = "[]";
+    }
+    setEditorProjectsLoading(false);
+  }, [projectBootstrap]);
+
   useEffect(() => {
+    if (projectBootstrap !== undefined) {
+      return;
+    }
     let cancelled = false;
     loadProjectsAction()
       .then((result) => {
@@ -190,7 +233,7 @@ export function DashboardLayout({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [projectBootstrap]);
 
   const projectNameForSave = useCallback(() => {
     if (!currentProjectId) return "Без названия";

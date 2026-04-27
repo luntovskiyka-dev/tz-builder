@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { getDashboardProjectBootstrap } from "@/lib/projects/dashboardBootstrap";
 
 export default async function DashboardPage() {
   const supabase = await createServerClient();
@@ -12,8 +13,11 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // Получаем текущий план пользователя
-  const { data: userPlan } = await supabase.rpc("get_user_plan");
+  const [planResult, projectBootstrap] = await Promise.all([
+    supabase.rpc("get_user_plan"),
+    getDashboardProjectBootstrap(supabase, user.id),
+  ]);
+  const { data: userPlan } = planResult;
 
   const planData = userPlan as {
     plan_slug?: string;
@@ -25,6 +29,7 @@ export default async function DashboardPage() {
 
   return (
     <DashboardLayout
+      projectBootstrap={projectBootstrap}
       user={{
         name:
           user.user_metadata?.full_name ??
